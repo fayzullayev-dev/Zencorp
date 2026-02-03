@@ -1,0 +1,234 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+    <title>Face ID — by Jamshid_coder</title>
+    <style>
+      :root{--bg:#0b1220;--glass:rgba(255,255,255,0.06);--accent:#34c759;--danger:#ff3b30;--muted:rgba(255,255,255,0.6)}
+      html,body{height:100%;margin:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial}
+      body{background:linear-gradient(180deg,#071022 0%, #0b1220 100%);color:#fff;display:flex;align-items:center;justify-content:center}
+      .frame{width:360px;max-width:92vw;background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);border-radius:28px;padding:20px;box-shadow:0 10px 30px rgba(2,6,23,0.6);backdrop-filter:blur(6px)}
+      .screen{position:relative;height:640px;width:320px;margin:0 auto;background:#000;border-radius:24px;overflow:hidden}
+      video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+      canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+      .ui{position:absolute;left:0;right:0;bottom:28px;text-align:center;z-index:5;color:var(--muted)}
+      .id-circle{width:120px;height:120px;margin:0 auto;border-radius:999px;border:6px solid rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent)}
+      .id-inner{width:80px;height:80px;border-radius:999px;border:4px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center}
+      .status{margin-top:14px;font-weight:600}
+      .sub{font-size:12px;color:var(--muted);margin-top:6px}
+      .controls{display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+      button{background:var(--glass);border:0;padding:8px 12px;border-radius:10px;color:#fff;font-weight:600;cursor:pointer}
+      button:hover{background:rgba(255,255,255,0.12)}
+      input[type=file]{display:none}
+      .recognized{color:var(--accent)}
+      .not-recognized{color:var(--danger)}
+      .hint{font-size:12px;color:var(--muted);margin-top:8px}
+      .topbar{position:absolute;left:0;right:0;top:10px;text-align:center;z-index:6}
+      .topbar small{background:rgba(0,0,0,0.35);padding:4px 8px;border-radius:999px}
+    </style>
+  </head>
+  <body>
+    <div class="frame">
+      <div style="text-align:center;margin-bottom:10px"><strong style="font-size:16px">Face ID — by Jamshid_coder</strong><div style="font-size:12px;color:var(--muted)">Upload a photo then point camera at face</div></div>
+      <div class="screen" id="screen">
+        <video id="video" autoplay muted playsinline></video>
+        <canvas id="overlay"></canvas>
+        <div class="topbar"><small id="modelStatus">Loading models...</small></div>
+        <div class="ui">
+          <div class="id-circle" id="circle">
+            <div class="id-inner" id="inner">
+              <svg id="iconLock" xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            </div>
+          </div>
+          <div class="status" id="statusText">Waiting for reference photo</div>
+          <div class="sub" id="subText">Upload clear front-facing photo (no hats/sunglasses)</div>
+          <div class="controls">
+            <input id="refUpload" type="file" accept="image/*" />
+            <button id="uploadBtn">Upload Photo</button>
+            <button id="startBtn">Start Camera</button>
+          </div>
+          <div class="hint">Status updates appear here. App runs entirely locally.</div>
+        </div>
+      </div>
+      <div style="margin-top:12px;font-size:12px;color:var(--muted)">Tip: open this file in your browser (desktop or phone), allow camera permission, and hold your device like a phone.</div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    <script>
+      // Local single-file Face ID app using face-api.js
+      const MODEL_URL = 'https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights'
+      const video = document.getElementById('video')
+      const overlay = document.getElementById('overlay')
+      const ctx = overlay.getContext('2d')
+      const modelStatus = document.getElementById('modelStatus')
+      const statusText = document.getElementById('statusText')
+      const subText = document.getElementById('subText')
+      const uploadInput = document.getElementById('refUpload')
+      const startBtn = document.getElementById('startBtn')
+      const uploadBtn = document.getElementById('uploadBtn')
+
+      let refDescriptor = null
+      let stream = null
+      let running = false
+      let loopHandle = null
+
+      async function loadModels(){
+        try{
+          modelStatus.textContent = 'Loading models...'
+          await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL)
+          await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL)
+          await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+          modelStatus.textContent = 'Models loaded (local).'
+        }catch(e){
+          modelStatus.textContent = 'Model load failed — check network/CORS.'
+          console.error(e)
+        }
+      }
+
+      function resizeCanvas(){
+        overlay.width = video.videoWidth || overlay.clientWidth
+        overlay.height = video.videoHeight || overlay.clientHeight
+      }
+
+      async function handleUpload(file){
+        statusText.textContent = 'Processing reference photo...'
+        try{
+          const img = await faceapi.bufferToImage(file)
+          const detection = await faceapi.detectSingleFace(img, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptor()
+          if(!detection){
+            statusText.textContent = 'No face found in uploaded photo'
+            subText.textContent = 'Try a clear front-facing photo without occlusions.'
+            refDescriptor = null
+            return
+          }
+          refDescriptor = detection.descriptor
+          statusText.textContent = 'Reference photo ready'
+          subText.textContent = 'Start camera and look at it to authenticate.'
+        }catch(e){
+          statusText.textContent = 'Error processing photo'
+          subText.textContent = 'Make sure it\'s a valid image file.'
+          console.error(e)
+        }
+      }
+
+      uploadBtn.addEventListener('click', ()=>{
+        uploadInput.click()
+      })
+
+      uploadInput.addEventListener('change', async (ev)=>{
+        const f = ev.target.files && ev.target.files[0]
+        if(!f) return
+        await handleUpload(f)
+      })
+
+      async function startCamera(){
+        if(stream) return
+        try{
+          stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'}, audio:false})
+          video.srcObject = stream
+          await video.play()
+          resizeCanvas()
+          running = true
+          runLoop()
+        }catch(e){
+          console.error(e)
+          statusText.textContent = 'Camera access denied or unavailable'
+          subText.textContent = 'Make sure the browser has camera permission.'
+        }
+      }
+
+      startBtn.addEventListener('click', async ()=>{
+        if(!refDescriptor){
+          statusText.textContent = 'Please upload a reference photo first.'
+          return
+        }
+        await startCamera()
+        startBtn.disabled = true
+      })
+
+      function stopCamera(){
+        running = false
+        if(loopHandle) cancelAnimationFrame(loopHandle)
+        if(stream){
+          stream.getTracks().forEach(t=>t.stop())
+          stream = null
+        }
+        startBtn.disabled = false
+      }
+
+      // Main detection loop
+      async function runLoop(){
+        if(!running) return
+        if(video.readyState >= 2){
+          resizeCanvas()
+          const options = new faceapi.TinyFaceDetectorOptions({inputSize:224, scoreThreshold:0.5})
+          // detect single face (fast)
+          const result = await faceapi.detectSingleFace(video, options).withFaceLandmarks().withFaceDescriptor()
+          ctx.clearRect(0,0,overlay.width, overlay.height)
+          if(!result){
+            statusText.textContent = 'No face detected'
+            statusText.className = ''
+            subText.textContent = 'Looking for a face...'
+            drawIdle()
+          } else {
+            // draw box
+            const resized = faceapi.resizeResults(result, {width:overlay.width, height:overlay.height})
+            const box = resized.detection.box
+            ctx.strokeStyle = 'rgba(255,255,255,0.6)'
+            ctx.lineWidth = 2
+            ctx.strokeRect(box.x, box.y, box.width, box.height)
+
+            // compare descriptors
+            if(refDescriptor){
+              const distance = faceapi.euclideanDistance(refDescriptor, result.descriptor)
+              const threshold = 0.56 // tweakable
+              if(distance <= threshold){
+                statusText.textContent = 'Recognized'
+                statusText.className = 'recognized'
+                subText.textContent = `Match (distance ${distance.toFixed(3)}) — Access granted` 
+                showRecognizedAnimation()
+              } else {
+                statusText.textContent = 'Not recognized'
+                statusText.className = 'not-recognized'
+                subText.textContent = `Face did not match (distance ${distance.toFixed(3)})` 
+                showNotRecognizedAnimation()
+              }
+            } else {
+              statusText.textContent = 'No reference image'
+              subText.textContent = 'Upload a photo to enable recognition.'
+            }
+          }
+        }
+        loopHandle = requestAnimationFrame(runLoop)
+      }
+
+      function drawIdle(){
+        // subtle pulse in circle handled by CSS; here we clear overlays
+      }
+
+      function showRecognizedAnimation(){
+        const inner = document.getElementById('inner')
+        inner.style.borderColor = 'rgba(52,199,89,0.9)'
+        setTimeout(()=>inner.style.borderColor = 'rgba(255,255,255,0.06)', 900)
+      }
+
+      function showNotRecognizedAnimation(){
+        const inner = document.getElementById('inner')
+        inner.style.borderColor = 'rgba(255,59,48,0.95)'
+        setTimeout(()=>inner.style.borderColor = 'rgba(255,255,255,0.06)', 900)
+      }
+
+      // initialize
+      (async ()=>{
+        await loadModels()
+        // keep scanning state even before camera — waiting for upload
+        statusText.textContent = 'Please upload reference photo'
+        subText.textContent = 'The app runs locally; models load from CDN.'
+      })()
+
+      // cleanup on page hide
+      window.addEventListener('pagehide', stopCamera)
+    </script>
+  </body>
+</html>

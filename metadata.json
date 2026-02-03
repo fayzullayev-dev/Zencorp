@@ -1,0 +1,7 @@
+{
+  "name": "ZenCorp Management Portal",
+  "description": "A comprehensive corporate management system for HR, task delegation, and employee attendance tracking with facial recognition simulation.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
