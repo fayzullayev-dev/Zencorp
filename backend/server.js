@@ -4,10 +4,8 @@ const cors = require('cors');
 const db = require('./database');
 const fs = require('fs');
 const path = require('path');
-const axios = require('axios');
-const FormData = require('form-data');
-const multer = require('multer');
-const upload = multer({ dest: 'uploads/' });
+
+const app = express();
 
 const app = express();
 const PORT = 3000;

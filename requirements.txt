@@ -1,0 +1,28 @@
+# Zencorp Management System Requirements
+
+This project consists of a React frontend and an Express backend.
+To run this project, you need Node.js and npm installed.
+
+## Frontend Dependencies
+Navigate to the root directory and run:
+`npm install`
+
+Libraries used:
+- react / react-dom (UI Framework)
+- vite (Build tool)
+- lucide-react (Icons)
+- face-api.js (Biometric Face ID recognition)
+
+## Backend Dependencies
+Navigate to the `backend` folder and run:
+`npm install`
+
+Libraries used:
+- express (Server Framework)
+- sqlite3 (Database)
+- cors (Cross-Origin Resource Sharing)
+- body-parser (Request parsing)
+
+## Project Setup
+1. In the root directory: `npm run dev` (Starts frontend on http://localhost:5173)
+2. In the `backend` directory: `node server.js` (Starts backend on http://localhost:3000)
