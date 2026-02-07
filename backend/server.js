@@ -11,8 +11,53 @@ const PORT = 3000;
 app.use(cors());
 app.use(bodyParser.json({ limit: '50mb' })); // For base64 images
 
+// --- MyID Proxy Endpoint ---
+app.post('/api/myid-proxy', (req, res) => {
+    const { pinfl } = req.body;
 
-// --- USERS & AUTH ---
+    if (!pinfl || pinfl.length !== 14 || !/^\d+$/.test(pinfl)) {
+        return res.status(400).json({ error: 'ПИНФЛ должен состоять из 14 цифр' });
+    }
+
+    // TODO: Интегрировать реальный API MyID с Access Token, чтобы я мог вставить туда боевые ключи позже.
+
+    // Demo Mode: Randomized Mock data
+    const firstNames = ['Алишер', 'Жамшид', 'Тимур', 'Сардор', 'Бахтиёр', 'Зарина', 'Нигора', 'Мафтуна', 'Шахноза', 'Дильноза'];
+    const lastNames = ['Файзуллаев', 'Ахмедов', 'Усманов', 'Каримов', 'Ибрагимов', 'Рахимов', 'Саидов', 'Туляганов', 'Махмудов', 'Курбанов'];
+    const middleNames = ['Каримович', 'Ахмедович', 'Бахтиярович', 'Тимурович', 'Нуруллаевич', 'Каримовна', 'Ахмедовна', 'Бахтияровна', 'Тимуровна', 'Нуруллаевна'];
+    const addresses = [
+        'г. Ташкент, Яккасарайский район, ул. Бабура, 15',
+        'г. Ташкент, Мирзо-Улугбекский район, ул. Мустакиллик, 42',
+        'г. Самарканд, ул. Дагбитская, 10',
+        'г. Бухара, ул. Бахоуддина Накшбанда, 25',
+        'г. Ташкент, Чиланзарский район, кв-л 2, д. 18'
+    ];
+
+    // Seed randomness with PINFL to get consistent but diverse data per user
+    const seed = parseInt(pinfl.slice(-3));
+    const isFemale = (seed % 2 === 0);
+
+    // Pick name from appropriate half of the array (0-4 male, 5-9 female)
+    const nameIdx = (seed % 5) + (isFemale ? 5 : 0);
+
+    const mockData = {
+        firstName: firstNames[nameIdx],
+        lastName: lastNames[nameIdx],
+        middleName: middleNames[nameIdx],
+        passportSerial: 'AD' + (1000000 + (seed * 1234 % 8999999)),
+        passportPIN: pinfl,
+        residence: addresses[seed % addresses.length],
+        birthPlace: (seed % 2 === 0 ? 'Ташкент' : 'Самарканд'),
+        // Visible placeholder photo based on gender
+        photoUrl: `https://avataaars.io/?avatarStyle=Circle&topType=${isFemale ? 'LongHairStraight' : 'ShortHairShortFlat'}&accessoriesType=Blank&hairColor=Black&facialHairType=Blank&clotheType=Hoodie&clotheColor=Blue03&eyeType=Default&eyebrowType=Default&mouthType=Default&skinColor=Light`,
+        phoneNumber: '+99890' + (1000000 + (seed * 5678 % 8999999))
+    };
+
+    // Return the response after a short delay to simulate network latency
+    setTimeout(() => {
+        res.json(mockData);
+    }, 1200);
+});
 
 app.post('/api/auth/login', (req, res) => {
     const { username, password, type, photo } = req.body; // type: 'password' | 'face_id'
