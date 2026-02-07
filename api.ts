@@ -1,7 +1,7 @@
 
 import { User, Employee, Catalog, Task, AttendanceRecord, Message, Suggestion } from './types';
 
-const API_URL = '/api';
+const API_URL = '/api-v1';
 
 const headers = {
     'Content-Type': 'application/json'
