@@ -53,7 +53,7 @@ const GlobalModals: React.FC<GlobalModalsProps> = ({
 
     setIsFetchingData(true);
     try {
-      const response = await fetch('http://localhost:3000/api/myid-proxy', {
+      const response = await fetch('/api/myid-proxy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pinfl: pinflValue })
