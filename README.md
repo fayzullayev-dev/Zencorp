@@ -1,18 +1,23 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+<div# ZenCorp Management Portal 🚀
 
-# Run and deploy your AI Studio app
+[![Live Demo](https://img.shields.io/badge/demo-online-brightgreen.svg?style=for-the-badge)](https://fayzullayev-dev.github.io/Zencorp/)
 
-This contains everything you need to run your app locally.
+**ZenCorp Management Portal** — это современная ERP-система для управления кадрами, задачами и посещаемостью с интеграцией MyID (ПИНФЛ) и Face ID.
 
-View your app in AI Studio: https://ai.studio/apps/drive/1xlna4PAbhGpYrbZrqwuLkNMutZdhDQ5j
+## 💼 Для работодателей (Showcase)
+Этот проект настроен для мгновенного просмотра без установки.
+- **[Посмотреть живое демо](https://fayzullayev-dev.github.io/Zencorp/)**
+- Не требуется запуск бэкенда или установка Node.js.
+- В демо-режиме используется `LocalStorage` браузера для сохранения данных.
 
-## Run Locally
+## ✨ Основные функции
+- **Автозаполнение по ПИНФЛ**: Интеграция с MyID (тестовый прокси). Попробуйте ввести 14 цифр при добавлении сотрудника.
+- **Face ID Авторизация**: Вход в систему по распознаванию лица.
+- **Управление задачами**: Система дедлайнов и отчетности.
+- **Логи посещаемости**: Контроль рабочего времени (Check-in/Check-out).
 
-**Prerequisites:** Node.js
-
-1. Install dependencies:
-   `npm install`
-2. Run the app:
+## 🛠 Технологии
+- **Frontend**: React, TypeScript, Vite, Tailwind CSS, Lucide React.
+- **Backend**: Node.js, Express, SQLite.
+- **AI**: face-api.js для Face ID.
    `npm run dev`
