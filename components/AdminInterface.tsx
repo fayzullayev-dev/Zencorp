@@ -8,22 +8,23 @@ interface AdminInterfaceProps {
   setEmployees: React.Dispatch<React.SetStateAction<Employee[]>>;
   t: any;
   isDarkMode: boolean;
+  notify: (type: 'success' | 'error' | 'info', message: string) => void;
 }
 
-const AdminInterface: React.FC<AdminInterfaceProps> = ({ employees, setEmployees, t, isDarkMode }) => {
+const AdminInterface: React.FC<AdminInterfaceProps> = ({ employees, setEmployees, t, isDarkMode, notify }) => {
   const [headId, setHeadId] = useState('');
   const [subordinateId, setSubordinateId] = useState('');
 
   const handleSetSubordination = (e: React.FormEvent) => {
     e.preventDefault();
     if (!headId || !subordinateId || headId === subordinateId) return;
-    
-    setEmployees(employees.map(emp => 
+
+    setEmployees(employees.map(emp =>
       emp.id === subordinateId ? { ...emp, reportsToId: headId } : emp
     ));
     setHeadId('');
     setSubordinateId('');
-    alert("Hierarchical link established successfully.");
+    notify('success', "Hierarchical link established successfully.");
   };
 
   const removeLink = (id: string) => {
@@ -53,7 +54,7 @@ const AdminInterface: React.FC<AdminInterfaceProps> = ({ employees, setEmployees
           <form onSubmit={handleSetSubordination} className="space-y-6">
             <div className="space-y-1">
               <label className="text-[10px] font-bold text-slate-400 uppercase px-2 tracking-widest">Select Supervisor</label>
-              <select 
+              <select
                 value={headId} onChange={e => setHeadId(e.target.value)}
                 className={inputClass}
               >
@@ -66,7 +67,7 @@ const AdminInterface: React.FC<AdminInterfaceProps> = ({ employees, setEmployees
             </div>
             <div className="space-y-1">
               <label className="text-[10px] font-bold text-slate-400 uppercase px-2 tracking-widest">Assign Subordinate</label>
-              <select 
+              <select
                 value={subordinateId} onChange={e => setSubordinateId(e.target.value)}
                 className={inputClass}
               >
@@ -74,7 +75,7 @@ const AdminInterface: React.FC<AdminInterfaceProps> = ({ employees, setEmployees
                 {employees.map(e => <option key={e.id} value={e.id}>{e.lastName} {e.firstName} ({e.position})</option>)}
               </select>
             </div>
-            <button 
+            <button
               type="submit"
               className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-2xl shadow-indigo-200 hover:scale-[1.02] transition-all"
             >
@@ -103,7 +104,7 @@ const AdminInterface: React.FC<AdminInterfaceProps> = ({ employees, setEmployees
                       <p className="text-[8px] text-slate-400 font-bold uppercase truncate w-24">{sub.position}</p>
                     </div>
                   </div>
-                  <button 
+                  <button
                     onClick={() => removeLink(sub.id)}
                     className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all opacity-0 group-hover:opacity-100"
                   >

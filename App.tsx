@@ -1,46 +1,60 @@
-
 import React, { useState, useEffect } from 'react';
 import { User, Employee, Task, Catalog, AttendanceRecord, Language, Message, Suggestion } from './types';
 import { api } from './api';
+import NotificationSystem, { Toast } from './components/NotificationSystem';
+import ConfirmModal from './components/ConfirmModal';
+import PromptModal from './components/PromptModal';
 import LoginForm from './components/LoginForm';
 import DirectorDashboard from './components/DirectorDashboard';
 import EmployeeDashboard from './components/EmployeeDashboard';
+import ManagerDashboard from './components/ManagerDashboard';
+import HRDashboard from './components/HRDashboard';
 import AdminInterface from './components/AdminInterface';
 import MonitoringDashboard from './components/MonitoringDashboard';
 import CredentialsDashboard from './components/CredentialsDashboard';
 import PersonnelList from './components/PersonnelList';
 import ChatWidget from './components/ChatWidget';
 import GlobalModals from './components/GlobalModals';
+import TaskRegistry from './components/TaskRegistry';
+import TaskSender from './components/TaskSender';
+import TaskWorkflowManager from './components/TaskWorkflowManager';
 import {
-  Home, UserPlus, FolderPlus, Users, ShieldCheck, Key,
+  Home, UserPlus, FolderPlus, Users, ShieldCheck, Key, Plus,
   Clock, LogOut, Sun, Moon, Send, Inbox, ChevronDown, ChevronRight,
-  Contact, FileText, ListFilter, ArrowLeft, Archive
+  Contact, FileText, ListFilter, ArrowLeft, Archive, Search as UserSearch,
+  LayoutPanelLeft, Workflow
 } from 'lucide-react';
 
 const translations = {
   en: {
-    search: "Search...", home: "Dashboard", addEmp: "Add Employee", addCat: "Add Catalog",
-    personnel: "Personnel", contacts: "Contacts", documents: "Documents", workersList: "Workers List",
+    search: "Search...", home: "Dashboard", addEmp: "Add Employee", addDep: "Add Department",
+    personnel: "Personnel Management", contacts: "Contacts", documents: "Documents", workersList: "Workers List",
     hierarchy: "Administration", credentials: "Credentials", monitoring: "Monitoring",
     logout: "Logout", themeDark: "Dark Mode", themeLight: "Light Mode", sendTask: "Send Directive",
-    receivedTasks: "Completed Reports", welcome: "Welcome back", stats: "Statistics",
-    catalogs: "Catalogs", back: "Back to Home", archive: "Archive"
+    receivedTasks: "Received Reports", welcome: "Welcome back", stats: "Statistics",
+    departments: "Departments", back: "Back to Home", archive: "Archive",
+    tasks: "Task Management", tasksSent: "Sent", tasksReceived: "Received", tasksPending: "Pending",
+    myDepartment: "My Department", processMonitor: "Process Monitor", backBtn: "Back"
   },
   ru: {
-    search: "Поиск...", home: "Главная", addEmp: "Добавить работника", addCat: "Создать каталог",
-    personnel: "Персонал", contacts: "Контакты", documents: "Документы", workersList: "Список рабочих",
+    search: "Поиск...", home: "Главная", addEmp: "Добавить работника", addDep: "Создать отдел",
+    personnel: "Список персонала", contacts: "Контакты", documents: "Документы", workersList: "Список рабочих",
     hierarchy: "Администрирование", credentials: "Логины/Пароли", monitoring: "Мониторинг",
     logout: "Выйти", themeDark: "Темный режим", themeLight: "Светлый режим", sendTask: "Отправить задачу",
     receivedTasks: "Завершенные отчеты", welcome: "С возвращением", stats: "Статистика",
-    catalogs: "Каталоги", back: "На главную", archive: "Архив"
+    departments: "Отделы", back: "На главную", archive: "Архив",
+    tasks: "Задачи", tasksSent: "Отправленные", tasksReceived: "Полученные", tasksPending: "Ожидаемые",
+    myDepartment: "Мой отдел", processMonitor: "Мониторинг процессов", backBtn: "Назад"
   },
   uz: {
-    search: "Qidiruv...", home: "Asosiy oyna", addEmp: "Xodim qo'shish", addCat: "Katalog yaratish",
-    personnel: "Xodimlar", contacts: "Kontaktlar", documents: "Hujjatlar", workersList: "Ishchilar ro'yxati",
+    search: "Qidiruv...", home: "Asosiy oyna", addEmp: "Xodim qo'shish", addDep: "Bo'lim yaratish",
+    personnel: "Xodimlar ro'yxati", contacts: "Kontaktlar", documents: "Hujjatlar", workersList: "Ishchilar ro'yxati",
     hierarchy: "Ma'muriyat", credentials: "Kirish ma'lumotlari", monitoring: "Monitoring",
     logout: "Chiqish", themeDark: "Tungi rejim", themeLight: "Kunduzgi rejim", sendTask: "Vazifa yuborish",
     receivedTasks: "Bajarilgan hisobotlar", welcome: "Xush kelibsiz", stats: "Statistika",
-    catalogs: "Kataloglar", back: "Asosiyga", archive: "Arxiv"
+    departments: "Bo'limlar", back: "Asosiyga", archive: "Arxiv",
+    tasks: "Vazifalar", tasksSent: "Yuborilgan", tasksReceived: "Qabul qilingan", tasksPending: "Kutilayotgan",
+    myDepartment: "Mening bo'limim", processMonitor: "Jarayonlar monitoringi", backBtn: "Orqaga"
   }
 };
 
@@ -58,7 +72,27 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<string>('main');
   const [activeModal, setActiveModal] = useState<'add_employee' | 'add_catalog' | null>(null);
   const [isPersonnelOpen, setIsPersonnelOpen] = useState(false);
-  const [isCatalogsOpen, setIsCatalogsOpen] = useState(false);
+  const [isDepartmentsOpen, setIsDepartmentsOpen] = useState(false);
+  const [isTasksMenuOpen, setIsTasksMenuOpen] = useState(false);
+  const [notifications, setNotifications] = useState<Toast[]>([]);
+  const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
+  const [promptModal, setPromptModal] = useState<{ isOpen: boolean; title: string; message: string; placeholder: string; onConfirm: (v: string) => void } | null>(null);
+
+  const notify = (type: 'success' | 'error' | 'info', message: string) => {
+    const id = Math.random().toString(36).substr(2, 9);
+    setNotifications(prev => [...prev, { id, type, message }]);
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }, 5000);
+  };
+
+  const requestConfirm = (title: string, message: string, onConfirm: () => void) => {
+    setConfirmModal({ isOpen: true, title, message, onConfirm });
+  };
+
+  const requestPrompt = (title: string, message: string, placeholder: string, onConfirm: (v: string) => void) => {
+    setPromptModal({ isOpen: true, title, message, placeholder, onConfirm });
+  };
 
   const t = translations[lang];
 
@@ -130,7 +164,7 @@ const App: React.FC = () => {
     try {
       // logic to distinguish employee vs admin login
       if (credentials.role) {
-        // direct mock login from existing frontend logic? 
+        // direct mock login from existing frontend logic?
         // Ideally we use api.login(credentials)
         setCurrentUser(credentials);
       } else {
@@ -148,6 +182,7 @@ const App: React.FC = () => {
     }
     setCurrentUser(null);
     setCurrentView('main');
+    notify('info', lang === 'ru' ? 'Выход из системы выполнен' : 'Logged out successfully');
   };
 
   if (!currentUser) {
@@ -169,59 +204,98 @@ const App: React.FC = () => {
         <div className="p-8 space-y-6 flex-1 overflow-y-auto no-scrollbar scroll-smooth">
           <div className="flex items-center gap-3 px-2 mb-4">
             <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black shadow-lg">ZC</div>
-            <h1 className="text-xl font-black italic tracking-tighter">ZEN<span className={isDarkMode ? 'text-slate-600' : 'text-slate-200'}>CORP</span></h1>
+            <h1 className="text-xl font-black tracking-tighter">ZEN<span className={isDarkMode ? 'text-slate-600' : 'text-slate-200'}>CORP</span></h1>
           </div>
 
           <nav className="space-y-1">
             <NavItem icon={Home} label={t.home} active={currentView === 'main'} onClick={() => setCurrentView('main')} />
 
-            {currentUser.role === 'director' && (
-              <>
-                <NavItem icon={UserPlus} label={t.addEmp} onClick={() => setActiveModal('add_employee')} />
-                <NavItem icon={FolderPlus} label={t.addCat} onClick={() => setActiveModal('add_catalog')} />
-                <NavItem icon={Send} label={t.sendTask} active={currentView === 'send_task'} onClick={() => setCurrentView('send_task')} />
-                <NavItem icon={Inbox} label={t.receivedTasks} active={currentView === 'inbox'} onClick={() => setCurrentView('inbox')} />
+            {/* My Department (Unit Lead) */}
+            {currentUser.role === 'unit_lead' && (
+              <button
+                onClick={() => { setCurrentView('my_department'); setIsTasksMenuOpen(false); setIsPersonnelOpen(false); setIsDepartmentsOpen(false); }}
+                className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all ${currentView === 'my_department' ? 'bg-indigo-600 text-white shadow-lg' : `${isDarkMode ? 'text-slate-500 hover:bg-slate-800/50' : 'text-slate-500 hover:bg-slate-50'}`}`}
+              >
+                <div className="flex items-center gap-4">
+                  <LayoutPanelLeft size={20} />
+                  <span className="text-sm font-bold">{t.myDepartment}</span>
+                </div>
+              </button>
+            )}
 
+            {['director', 'manager', 'unit_lead'].includes(currentUser.role) && (
+              <button
+                onClick={() => { setCurrentView('workflow_monitor'); setIsTasksMenuOpen(false); setIsPersonnelOpen(false); setIsDepartmentsOpen(false); }}
+                className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all ${currentView === 'workflow_monitor' ? 'bg-indigo-600 text-white shadow-lg' : `${isDarkMode ? 'text-slate-500 hover:bg-slate-800/50' : 'text-slate-500 hover:bg-slate-50'}`}`}
+              >
+                <div className="flex items-center gap-4">
+                  <Workflow size={20} />
+                  <span className="text-sm font-bold">{t.processMonitor}</span>
+                </div>
+              </button>
+            )}
+
+            {/* Personnel Management Group */}
+            {['manager', 'hr_head', 'director', 'unit_lead'].includes(currentUser.role) && (
+              <>
                 <div className="space-y-1">
                   <button
                     onClick={() => setIsPersonnelOpen(!isPersonnelOpen)}
-                    className={`w-full flex items-center justify-between px-5 py-4 rounded-2xl text-sm font-bold transition-all ${isDarkMode ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-50'}`}
+                    className={`w-full flex items-center justify-between px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${isPersonnelOpen ? 'text-indigo-600 bg-indigo-50/50' : 'text-slate-400 hover:text-slate-600'}`}
                   >
-                    <div className="flex items-center gap-4"><Users size={20} /> {t.personnel}</div>
+                    <div className="flex items-center gap-4"><Users size={18} /> {t.personnel}</div>
                     {isPersonnelOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                   </button>
                   {isPersonnelOpen && (
                     <div className="space-y-1 animate-in slide-in-from-top-2">
-                      <NavItem sub icon={ListFilter} label={t.workersList} active={currentView === 'workers'} onClick={() => setCurrentView('workers')} />
-                      <NavItem sub icon={Contact} label={t.contacts} active={currentView === 'contacts'} onClick={() => setCurrentView('contacts')} />
-                      <NavItem sub icon={FileText} label={t.documents} active={currentView === 'documents'} onClick={() => setCurrentView('documents')} />
+                      <NavItem sub icon={ChevronRight} label={t.workersList} active={currentView === 'workers'} onClick={() => setCurrentView('workers')} />
+                      {(currentUser.role === 'manager' || currentUser.role === 'director') && (
+                        <NavItem sub icon={Plus} label={t.addEmp} active={activeModal === 'add_employee'} onClick={() => setActiveModal('add_employee')} />
+                      )}
+                      <button
+                        onClick={() => setIsDepartmentsOpen(!isDepartmentsOpen)}
+                        className={`w-full flex items-center justify-between pl-10 pr-5 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${isDepartmentsOpen ? 'text-indigo-500' : 'text-slate-400'}`}
+                      >
+                        <div className="flex items-center gap-3"><ListFilter size={14} /> {t.departments}</div>
+                        {isDepartmentsOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                      </button>
+                      {isDepartmentsOpen && (
+                        <div className="space-y-1 pl-4">
+                          {catalogs.map(cat => (
+                            <NavItem
+                              key={cat.id} sub icon={ChevronRight} label={cat.name}
+                              active={currentView === `catalog-${cat.id}`}
+                              onClick={() => setCurrentView(`catalog-${cat.id}`)}
+                            />
+                          ))}
+                          {(currentUser.role === 'director') && (
+                            <NavItem sub icon={FolderPlus} label={t.addDep} active={activeModal === 'add_catalog'} onClick={() => setActiveModal('add_catalog')} />
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
 
                 <div className="space-y-1">
                   <button
-                    onClick={() => setIsCatalogsOpen(!isCatalogsOpen)}
-                    className={`w-full flex items-center justify-between px-5 py-4 rounded-2xl text-sm font-bold transition-all ${isDarkMode ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-50'}`}
+                    onClick={() => setIsTasksMenuOpen(!isTasksMenuOpen)}
+                    className={`w-full flex items-center justify-between px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${isTasksMenuOpen ? 'text-indigo-600 bg-indigo-50/50' : 'text-slate-400 hover:text-slate-600'}`}
                   >
-                    <div className="flex items-center gap-4"><ListFilter size={20} /> {t.catalogs}</div>
-                    {isCatalogsOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                    <div className="flex items-center gap-4"><FileText size={18} /> {t.tasks}</div>
+                    {isTasksMenuOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                   </button>
-                  {isCatalogsOpen && (
+                  {isTasksMenuOpen && (
                     <div className="space-y-1 animate-in slide-in-from-top-2">
-                      {catalogs.map(cat => (
-                        <NavItem
-                          key={cat.id} sub icon={ChevronRight} label={cat.name}
-                          active={currentView === `catalog-${cat.id}`}
-                          onClick={() => setCurrentView(`catalog-${cat.id}`)}
-                        />
-                      ))}
+                      <NavItem sub icon={Send} label={t.sendTask} active={currentView === 'send_task'} onClick={() => setCurrentView('send_task')} />
+                      <NavItem sub icon={ChevronRight} label={t.tasksSent} active={currentView === 'tasks_sent'} onClick={() => setCurrentView('tasks_sent')} />
+                      <NavItem sub icon={ChevronRight} label={t.tasksReceived} active={currentView === 'tasks_received'} onClick={() => setCurrentView('tasks_received')} />
+                      <NavItem sub icon={Clock} label={t.tasksPending} active={currentView === 'tasks_pending'} onClick={() => setCurrentView('tasks_pending')} />
                     </div>
                   )}
                 </div>
 
                 <div className={`pt-4 border-t space-y-1 ${isDarkMode ? 'border-slate-800' : 'border-slate-50'}`}>
-                  <NavItem icon={ShieldCheck} label={t.hierarchy} active={currentView === 'admin'} onClick={() => setCurrentView('admin')} />
                   <NavItem icon={Key} label={t.credentials} active={currentView === 'credentials'} onClick={() => setCurrentView('credentials')} />
                   <NavItem icon={Clock} label={t.monitoring} active={currentView === 'monitoring'} onClick={() => setCurrentView('monitoring')} />
                   <NavItem icon={Archive} label={t.archive} active={currentView === 'archive'} onClick={() => setCurrentView('archive')} />
@@ -231,19 +305,44 @@ const App: React.FC = () => {
           </nav>
         </div>
 
-        <div className={`p-8 border-t space-y-4 ${isDarkMode ? 'border-slate-800' : 'border-slate-50'}`}>
-          <button
-            onClick={() => setIsDarkMode(!isDarkMode)}
-            className={`w-full flex items-center justify-between px-5 py-4 rounded-2xl text-sm font-bold transition-all ${isDarkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-50 text-slate-500'}`}
-          >
-            <div className="flex items-center gap-4">
-              {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
-              {isDarkMode ? t.themeLight : t.themeDark}
+        {/* Footer with Icons: Theme, Language, Logout */}
+        <div className={`mt-auto p-4 border-t ${isDarkMode ? 'border-slate-800' : 'border-slate-100'} space-y-4`}>
+          <div className="flex items-center justify-between gap-2">
+            {/* Language Switcher */}
+            <div className="flex gap-1">
+              {[
+                { code: 'ru', label: 'RU', flag: '🇷🇺' },
+                { code: 'en', label: 'EN', flag: '🇺🇸' },
+                { code: 'uz', label: 'UZ', flag: '🇺🇿' }
+              ].map(l => (
+                <button
+                  key={l.code}
+                  onClick={() => setLang(l.code as Language)}
+                  className={`w-8 h-8 flex items-center justify-center rounded-lg text-[10px] font-black transition-all ${lang === l.code ? 'bg-indigo-600 text-white shadow-lg' : `${isDarkMode ? 'bg-slate-800 text-slate-500' : 'bg-slate-100 text-slate-400'}`}`}
+                  title={l.label}
+                >
+                  {l.flag}
+                </button>
+              ))}
             </div>
-          </button>
-          <button onClick={handleLogout} className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-sm font-bold text-red-500 hover:bg-red-50 transition-all">
-            <LogOut size={20} /> {t.logout}
-          </button>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setIsDarkMode(!isDarkMode)}
+                className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all ${isDarkMode ? 'bg-slate-800 text-amber-400 hover:bg-slate-700' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+              >
+                {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
+              </button>
+
+              <button
+                onClick={handleLogout}
+                className="w-10 h-10 flex items-center justify-center rounded-xl bg-red-500 text-white hover:bg-red-600 shadow-lg shadow-red-500/20 transition-all"
+                title={t.logout}
+              >
+                <LogOut size={18} />
+              </button>
+            </div>
+          </div>
         </div>
       </aside>
 
@@ -259,11 +358,11 @@ const App: React.FC = () => {
 
         <div className="flex-1">
           {currentView === 'admin' ? (
-            <AdminInterface employees={employees} setEmployees={setEmployees} t={t} isDarkMode={isDarkMode} />
+            <AdminInterface employees={employees} setEmployees={setEmployees} t={t} isDarkMode={isDarkMode} notify={notify} />
           ) : currentView === 'monitoring' ? (
-            <MonitoringDashboard attendance={attendance} setAttendance={setAttendance} t={t} isDarkMode={isDarkMode} />
+            <MonitoringDashboard attendance={attendance} setAttendance={setAttendance} t={t} isDarkMode={isDarkMode} notify={notify} requestConfirm={requestConfirm} />
           ) : currentView === 'credentials' ? (
-            <CredentialsDashboard employees={employees} setEmployees={setEmployees} t={t} isDarkMode={isDarkMode} />
+            <CredentialsDashboard employees={employees} setEmployees={setEmployees} t={t} isDarkMode={isDarkMode} notify={notify} />
           ) : (currentView === 'contacts' || currentView === 'documents' || currentView === 'workers' || currentView === 'archive' || currentView.startsWith('catalog-')) ? (
             <PersonnelList
               employees={employees}
@@ -276,6 +375,68 @@ const App: React.FC = () => {
               // FIXED: correctly extract catalog ID by removing the prefix instead of splitting
               catalogId={currentView.startsWith('catalog-') ? currentView.replace('catalog-', '') : undefined}
               catalogs={catalogs}
+              notify={notify}
+              requestConfirm={requestConfirm}
+              currentUser={currentUser}
+            />
+          ) : currentView === 'send_task' ? (
+            <TaskSender
+              currentUser={currentUser}
+              employees={employees}
+              setTasks={setTasks}
+              notify={notify}
+              isDarkMode={isDarkMode}
+              lang={lang}
+            />
+          ) : currentView === 'my_department' ? (
+            <PersonnelList
+              viewType="workers"
+              employees={employees.filter(e => e.departmentId === currentUser.departmentId)}
+              attendance={attendance}
+              setEmployees={setEmployees}
+              t={t}
+              lang={lang}
+              isDarkMode={isDarkMode}
+              currentUser={currentUser}
+              catalogs={catalogs}
+              notify={notify}
+              requestConfirm={requestConfirm}
+            />
+          ) : currentView === 'workflow_monitor' ? (
+            <TaskWorkflowManager
+              tasks={tasks}
+              currentUser={currentUser}
+              isDarkMode={isDarkMode}
+              lang={lang}
+            />
+          ) : (currentView === 'tasks_sent' || currentView === 'tasks_received' || currentView === 'tasks_pending') ? (
+            <TaskRegistry
+              currentUser={currentUser}
+              tasks={tasks}
+              viewType={currentView.replace('tasks_', '') as any}
+              isDarkMode={isDarkMode}
+              lang={lang}
+              setTasks={setTasks}
+              notify={notify}
+              requestConfirm={requestConfirm}
+            />
+          ) : currentUser.role === 'manager' ? (
+            <ManagerDashboard
+              currentUser={currentUser}
+              employees={employees}
+              tasks={tasks}
+              setEmployees={setEmployees}
+              setTasks={setTasks}
+              notify={notify}
+              requestConfirm={requestConfirm}
+            />
+          ) : currentUser.role === 'hr_head' ? (
+            <HRDashboard
+              currentUser={currentUser}
+              employees={employees}
+              tasks={tasks}
+              setTasks={setTasks}
+              notify={notify}
             />
           ) : currentUser.role === 'director' ? (
             <DirectorDashboard
@@ -285,6 +446,10 @@ const App: React.FC = () => {
               attendance={attendance} t={t} isDarkMode={isDarkMode}
               currentView={currentView} setCurrentView={setCurrentView}
               ideas={ideas} setIdeas={setIdeas}
+              notify={notify}
+              requestConfirm={requestConfirm}
+              requestPrompt={requestPrompt}
+              lang={lang}
             />
           ) : (
             <EmployeeDashboard
@@ -293,6 +458,7 @@ const App: React.FC = () => {
               attendance={attendance} setAttendance={setAttendance}
               t={t} lang={lang} isDarkMode={isDarkMode}
               ideas={ideas} setIdeas={setIdeas}
+              notify={notify}
             />
           )}
         </div>
@@ -308,6 +474,7 @@ const App: React.FC = () => {
         t={t}
         isDarkMode={isDarkMode}
         lang={lang}
+        notify={notify}
       />
 
       <ChatWidget
@@ -318,6 +485,42 @@ const App: React.FC = () => {
         isDarkMode={isDarkMode}
         lang={lang}
       />
+
+      <NotificationSystem
+        notifications={notifications}
+        removeNotification={(id) => setNotifications(prev => prev.filter(n => n.id !== id))}
+      />
+
+      {confirmModal && (
+        <ConfirmModal
+          isOpen={confirmModal.isOpen}
+          title={confirmModal.title}
+          message={confirmModal.message}
+          onConfirm={() => {
+            confirmModal.onConfirm();
+            setConfirmModal(null);
+          }}
+          onCancel={() => setConfirmModal(null)}
+          isDarkMode={isDarkMode}
+          lang={lang}
+        />
+      )}
+
+      {promptModal && (
+        <PromptModal
+          isOpen={promptModal.isOpen}
+          title={promptModal.title}
+          message={promptModal.message}
+          placeholder={promptModal.placeholder}
+          onConfirm={(v) => {
+            promptModal.onConfirm(v);
+            setPromptModal(null);
+          }}
+          onCancel={() => setPromptModal(null)}
+          isDarkMode={isDarkMode}
+          lang={lang}
+        />
+      )}
     </div>
   );
 };

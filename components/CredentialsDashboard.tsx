@@ -9,9 +9,10 @@ interface CredentialsDashboardProps {
   setEmployees: React.Dispatch<React.SetStateAction<Employee[]>>;
   t: any;
   isDarkMode: boolean;
+  notify: (type: 'success' | 'error' | 'info', message: string) => void;
 }
 
-const CredentialsDashboard: React.FC<CredentialsDashboardProps> = ({ employees, setEmployees, t, isDarkMode }) => {
+const CredentialsDashboard: React.FC<CredentialsDashboardProps> = ({ employees, setEmployees, t, isDarkMode, notify }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
@@ -24,9 +25,9 @@ const CredentialsDashboard: React.FC<CredentialsDashboardProps> = ({ employees, 
       setEditingId(null);
       setLogin('');
       setPassword('');
-      alert(t.credentialsUpdated || "Employee credentials updated successfully.");
+      notify('success', t.credentialsUpdated || "Employee credentials updated successfully.");
     } catch (e) {
-      alert("Failed to save credentials");
+      notify('error', "Failed to save credentials");
     }
   };
 

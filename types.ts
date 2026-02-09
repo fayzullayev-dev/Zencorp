@@ -1,5 +1,5 @@
 
-export type UserRole = 'manager' | 'employee' | 'hr_head' | 'director';
+export type UserRole = 'manager' | 'employee' | 'hr_head' | 'director' | 'unit_lead';
 export type Language = 'en' | 'ru' | 'uz';
 
 export interface User {
@@ -8,6 +8,7 @@ export interface User {
   role: UserRole;
   fullName: string;
   email: string;
+  departmentId?: string;
 }
 
 export interface Department {
@@ -57,6 +58,12 @@ export interface Suggestion {
   date: number;
 }
 
+export interface SubTask {
+  id: string;
+  title: string;
+  completed: boolean;
+}
+
 export interface Employee {
   id: string;
   firstName: string;
@@ -82,7 +89,7 @@ export interface Employee {
   departmentId?: string;
 }
 
-export type TaskStatus = 'pending' | 'read' | 'in_progress' | 'in_review' | 'completed' | 'overdue' | 'pending_hr' | 'review_by_hr' | 'assigned_to_worker';
+export type TaskStatus = 'pending' | 'read' | 'in_progress' | 'in_review' | 'completed' | 'overdue' | 'pending_hr' | 'review_by_hr' | 'assigned_to_worker' | 'on_hold';
 
 export interface Task {
   id: string;
@@ -91,6 +98,7 @@ export interface Task {
   fromId: string;
   fromName: string;
   toId: string;
+  toName?: string;
   status: TaskStatus;
   createdAt: number;
   updatedAt?: number;
@@ -99,4 +107,9 @@ export interface Task {
   fromManagerId?: string;
   assignedWorkerId?: string;
   hrReviewerId?: string;
+  subTasks?: SubTask[];
+  parentTaskId?: string;
+  isChainTask?: boolean;
+  chainStep?: number;
+  nextChainTaskId?: string;
 }

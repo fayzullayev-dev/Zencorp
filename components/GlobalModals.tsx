@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Catalog, Employee } from '../types';
 import { X, Camera, Upload, Phone, MapPin, Hash, Shield, Clock, Download, QrCode, Calendar, User as UserIcon } from 'lucide-react';
-import { api } from '../api';
+import { api, isDemo } from '../api';
 
 interface GlobalModalsProps {
   activeModal: 'add_employee' | 'add_catalog' | null;
@@ -14,10 +14,11 @@ interface GlobalModalsProps {
   t: any;
   isDarkMode: boolean;
   lang: string;
+  notify: (type: 'success' | 'error' | 'info', message: string) => void;
 }
 
 const GlobalModals: React.FC<GlobalModalsProps> = ({
-  activeModal, setActiveModal, catalogs, setCatalogs, employees, setEmployees, t, isDarkMode, lang
+  activeModal, setActiveModal, catalogs, setCatalogs, employees, setEmployees, t, isDarkMode, lang, notify
 }) => {
   const [empForm, setEmpForm] = useState({
     firstName: '',
@@ -47,11 +48,39 @@ const GlobalModals: React.FC<GlobalModalsProps> = ({
 
   const handleMyIDRequest = async () => {
     if (pinflValue.length !== 14) {
-      alert("ПИНФЛ должен быть ровно 14 цифр");
+      notify('error', lang === 'ru' ? "ПИНФЛ должен быть ровно 14 цифр" : "PINFL must be exactly 14 digits");
       return;
     }
 
     setIsFetchingData(true);
+
+    // DEMO MODE Fallback
+    if (isDemo) {
+      setTimeout(() => {
+        const seed = parseInt(pinflValue.slice(-3)) || 0;
+        const isFemale = (seed % 2 === 0);
+        const firstNames = ['Алишер', 'Жамшид', 'Тимур', 'Сардор', 'Бахтиёр', 'Зарина', 'Нигора', 'Мафтуна', 'Шахноза', 'Дильноза'];
+        const lastNames = ['Файзуллаев', 'Ахмедов', 'Усманов', 'Каримов', 'Ибрагимов', 'Рахимов', 'Саидов', 'Туляганов', 'Махмудов', 'Курбанов'];
+        const nameIdx = (seed % 5) + (isFemale ? 5 : 0);
+
+        setEmpForm(prev => ({
+          ...prev,
+          firstName: firstNames[nameIdx],
+          lastName: lastNames[nameIdx],
+          middleName: isFemale ? 'Ахмедовна' : 'Каримович',
+          passportSerial: 'AD' + (1000000 + (seed * 1234 % 8999999)),
+          passportPIN: pinflValue,
+          residence: 'г. Ташкент (Demo)',
+          photoUrl: `https://avataaars.io/?avatarStyle=Circle&topType=${isFemale ? 'LongHairStraight' : 'ShortHairShortFlat'}&accessoriesType=Blank&hairColor=Black&facialHairType=Blank&clotheType=Hoodie&clotheColor=Blue03&eyeType=Default&eyebrowType=Default&mouthType=Default&skinColor=Light`,
+          phoneNumber: '+99890' + (1000000 + (seed * 5678 % 8999999))
+        }));
+        setShowPinflInput(false);
+        setPinflValue('');
+        setIsFetchingData(false);
+      }, 1000);
+      return;
+    }
+
     try {
       const response = await fetch('/api-v1/myid-proxy', {
         method: 'POST',
@@ -75,11 +104,11 @@ const GlobalModals: React.FC<GlobalModalsProps> = ({
         setShowPinflInput(false);
         setPinflValue('');
       } else {
-        alert(data.error || "Ошибка загрузки данных");
+        notify('error', data.error || (lang === 'ru' ? "Ошибка загрузки данных" : "Data loading error"));
       }
     } catch (err) {
       console.error(err);
-      alert("Не удалось соединиться с сервером");
+      notify('error', lang === 'ru' ? "Не удалось соединиться с сервером" : "Failed to connect to server");
     } finally {
       setIsFetchingData(false);
     }
@@ -98,7 +127,7 @@ const GlobalModals: React.FC<GlobalModalsProps> = ({
       const stream = await navigator.mediaDevices.getUserMedia({ video: { aspectRatio: 3 / 4 } });
       if (videoRef.current) videoRef.current.srcObject = stream;
     } catch (err) {
-      alert("Ошибка доступа к камере. Убедитесь, что разрешения даны.");
+      notify('error', lang === 'ru' ? "Ошибка доступа к камере. Убедитесь, что разрешения даны." : "Camera access denied. Check permissions.");
       setIsCameraActive(false);
     }
   };
@@ -125,10 +154,10 @@ const GlobalModals: React.FC<GlobalModalsProps> = ({
 
   const handleSaveEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!empForm.photoUrl) { alert("Сделайте фото или загрузите файл (3x4)"); return; }
-    if (empForm.passportPIN.length !== 14) { alert("ПИНФЛ должен быть ровно 14 цифр"); return; }
-    if (!empForm.catalogId) { alert("Выберите каталог"); return; }
-    if (!empForm.position) { alert("Выберите должность"); return; }
+    if (!empForm.photoUrl) { notify('error', lang === 'ru' ? "Сделайте фото или загрузите файл (3x4)" : "Take photo or upload file (3x4)"); return; }
+    if (empForm.passportPIN.length !== 14) { notify('error', lang === 'ru' ? "ПИНФЛ должен быть ровно 14 цифр" : "PINFL must be 14 digits"); return; }
+    if (!empForm.catalogId) { notify('error', lang === 'ru' ? "Выберите каталог" : "Select catalog"); return; }
+    if (!empForm.position) { notify('error', lang === 'ru' ? "Выберите должность" : "Select position"); return; }
 
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${generatedID}`;
 
@@ -154,10 +183,10 @@ const GlobalModals: React.FC<GlobalModalsProps> = ({
         phoneNumber: '', residence: '', passportSerial: '', passportPIN: '', photoUrl: '',
         workingHours: '09:00 - 18:00', workingDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
       });
-      alert(lang === 'ru' ? "Сотрудник успешно принят в штат!" : "Employee successfully added!");
+      notify('success', lang === 'ru' ? "Сотрудник успешно принят в штат!" : "Employee successfully added!");
     } catch (err: any) {
       console.error(err);
-      alert(lang === 'ru' ? `Ошибка сохранения: ${err.message || 'Сервер недоступен'}` : `Save failed: ${err.message || 'Server unreachable'}`);
+      notify('error', lang === 'ru' ? `Ошибка сохранения: ${err.message || 'Сервер недоступен'}` : `Save failed: ${err.message || 'Server unreachable'}`);
     }
   };
 
@@ -165,7 +194,7 @@ const GlobalModals: React.FC<GlobalModalsProps> = ({
     e.preventDefault();
     const pos = catForm.positionsString.split(',').map(p => p.trim()).filter(p => p !== '');
     if (!catForm.name || pos.length === 0) {
-      alert(lang === 'ru' ? "Заполните название и должности" : "Fill name and positions");
+      notify('error', lang === 'ru' ? "Заполните название и должности" : "Fill name and positions");
       return;
     }
 
@@ -177,10 +206,10 @@ const GlobalModals: React.FC<GlobalModalsProps> = ({
       setCatalogs(prev => [...prev, newCat]);
       setCatForm({ name: '', positionsString: '' });
       setActiveModal(null);
-      alert(lang === 'ru' ? "Каталог успешно создан!" : "Catalog successfully created!");
+      notify('success', lang === 'ru' ? "Каталог успешно создан!" : "Catalog successfully created!");
     } catch (err: any) {
       console.error(err);
-      alert(lang === 'ru' ? `Ошибка создания каталога: ${err.message || 'Сервер недоступен'}` : `Catalog creation failed: ${err.message || 'Server unreachable'}`);
+      notify('error', lang === 'ru' ? `Ошибка создания каталога: ${err.message || 'Сервер недоступен'}` : `Catalog creation failed: ${err.message || 'Server unreachable'}`);
     }
   };
 
@@ -352,8 +381,14 @@ const GlobalModals: React.FC<GlobalModalsProps> = ({
           <canvas ref={canvasRef} className="hidden" />
 
           {isCameraActive && (
-            <div className="fixed inset-0 bg-black/98 z-[3000] flex flex-col items-center justify-center p-8">
-              <div className="relative w-80 h-[450px] rounded-[3.5rem] overflow-hidden border-8 border-indigo-500 shadow-[0_0_80px_rgba(79,70,229,0.4)]">
+            <div
+              className="fixed inset-0 bg-black/98 z-[3000] flex flex-col items-center justify-center p-8 cursor-pointer"
+              onClick={stopCamera}
+            >
+              <div
+                className="relative w-80 h-[450px] rounded-[3.5rem] overflow-hidden border-8 border-indigo-500 shadow-[0_0_80px_rgba(79,70,229,0.4)] cursor-default"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
                 <div className="absolute inset-0 border-[30px] border-black/10 pointer-events-none" />
                 <button type="button" onClick={capturePhoto} className="absolute bottom-10 left-1/2 -translate-x-1/2 w-20 h-20 bg-white rounded-full flex items-center justify-center text-indigo-600 shadow-2xl hover:scale-110 active:scale-90 transition-all"><Camera size={36} /></button>
@@ -369,19 +404,19 @@ const GlobalModals: React.FC<GlobalModalsProps> = ({
       {activeModal === 'add_catalog' && (
         <div className={`${cardClass} w-full max-w-md animate-in zoom-in-95 my-auto p-10`}>
           <div className="flex justify-between items-center mb-10">
-            <h4 className="text-2xl font-black italic tracking-tighter">Создать каталог</h4>
+            <h4 className="text-2xl font-black italic tracking-tighter">{lang === 'ru' ? 'Создать отдел' : 'Create Department'}</h4>
             <button onClick={() => setActiveModal(null)} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-xl"><X size={20} /></button>
           </div>
           <form onSubmit={handleAddCatalog} className="space-y-8">
             <div className="space-y-1">
-              <label className={labelClass}>Имя каталога (Департамент)</label>
-              <input required className={inputClass} placeholder="Напр. Бухгалтерия" value={catForm.name} onChange={e => setCatForm({ ...catForm, name: e.target.value })} />
+              <label className={labelClass}>{lang === 'ru' ? 'Имя отдела' : 'Department Name'}</label>
+              <input required className={inputClass} placeholder={lang === 'ru' ? "Напр. Бухгалтерия" : "e.g. Accounting"} value={catForm.name} onChange={e => setCatForm({ ...catForm, name: e.target.value })} />
             </div>
             <div className="space-y-1">
-              <label className={labelClass}>Список должностей (через запятую)</label>
-              <textarea required className={`${inputClass} h-32 resize-none`} placeholder="Главбух, Кассир, Ревизор..." value={catForm.positionsString} onChange={e => setCatForm({ ...catForm, positionsString: e.target.value })} />
+              <label className={labelClass}>{lang === 'ru' ? 'Список должностей (через запятую)' : 'Positions List (comma separated)'}</label>
+              <textarea required className={`${inputClass} h-32 resize-none`} placeholder={lang === 'ru' ? "Главбух, Кассир, Ревизор..." : "Accountant, Cashier..."} value={catForm.positionsString} onChange={e => setCatForm({ ...catForm, positionsString: e.target.value })} />
             </div>
-            <button type="submit" className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-indigo-100">Инициализировать раздел</button>
+            <button type="submit" className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-indigo-100">{lang === 'ru' ? 'Инициализировать отдел' : 'Initialize Department'}</button>
           </form>
         </div>
       )}

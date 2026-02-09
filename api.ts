@@ -1,11 +1,40 @@
 
 import { User, Employee, Catalog, Task, AttendanceRecord, Message, Suggestion } from './types';
 
-const isDemo = typeof window !== 'undefined' && (window.location.hostname === 'fayzullayev-dev.github.io' || !window.location.hostname.includes('localhost'));
+export const isDemo = typeof window !== 'undefined' && (window.location.hostname === 'fayzullayev-dev.github.io' || window.location.search.includes('demo=true'));
 const API_URL = '/api-v1';
 const headers = { 'Content-Type': 'application/json' };
 
-const getStore = (key: string) => JSON.parse(localStorage.getItem(key) || '[]');
+const getStore = (key: string) => {
+    try {
+        const data = localStorage.getItem(key);
+        if (!data) {
+            // Seed initial data for demo
+            if (key === 'employees') return SEED_EMPLOYEES;
+            if (key === 'catalogs') return SEED_CATALOGS;
+            return [];
+        }
+        return JSON.parse(data);
+    }
+    catch (e) { return []; }
+};
+
+const SEED_CATALOGS = [
+    { id: 'cat-1', name: 'Администрация', positions: ['Директор', 'Замдиректора'] },
+    { id: 'cat-2', name: 'IT Департамент', positions: ['Fullstack Developer', 'UI/UX Designer'] }
+];
+
+const SEED_EMPLOYEES = [
+    {
+        id: 'emp-seed-1', firstName: 'Алишер', lastName: 'Файзуллаев', middleName: 'Каримович',
+        position: 'Fullstack Developer', catalogId: 'cat-2', phoneNumber: '+998901234567',
+        residence: 'г. Ташкент', passportSerial: 'AD1234567', passportPIN: '12345678901234',
+        photoUrl: 'https://avataaars.io/?avatarStyle=Circle&topType=ShortHairShortFlat&accessoriesType=Blank&hairColor=Black&facialHairType=Blank&clotheType=Hoodie&clotheColor=Blue03&eyeType=Default&eyebrowType=Default&mouthType=Default&skinColor=Light',
+        status: 'active', qrCode: 'ZEN-DEMO-1', systemLogin: '123456', systemPassword: '1234',
+        workingHours: '09:00 - 18:00', workingDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']
+    }
+];
+
 const setStore = (key: string, data: any) => localStorage.setItem(key, JSON.stringify(data));
 
 export const api = {
@@ -78,6 +107,19 @@ export const api = {
         return res.json();
     },
 
+    deleteEmployee: async (id: string) => {
+        if (isDemo) {
+            let emps = getStore('employees');
+            emps = emps.filter((e: any) => e.id !== id);
+            setStore('employees', emps);
+            return { success: true };
+        }
+        const res = await fetch(`${API_URL}/employees/${id}`, {
+            method: 'DELETE'
+        });
+        return res.json();
+    },
+
     // Catalogs
     getCatalogs: async () => {
         if (isDemo) return getStore('catalogs');
@@ -124,9 +166,8 @@ export const api = {
 
     updateTask: async (id: string, updates: Partial<Task>) => {
         if (isDemo) {
-            const tasks = getStore('tasks');
-            const idx = tasks.findIndex((t: any) => t.id === id);
-            if (idx !== -1) tasks[idx] = { ...tasks[idx], ...updates };
+            let tasks = getStore('tasks');
+            tasks = tasks.map((t: Task) => t.id === id ? { ...t, ...updates } : t);
             setStore('tasks', tasks);
             return { success: true };
         }
@@ -134,6 +175,19 @@ export const api = {
             method: 'PUT',
             headers,
             body: JSON.stringify(updates)
+        });
+        return res.json();
+    },
+
+    deleteTask: async (id: string) => {
+        if (isDemo) {
+            let tasks = getStore('tasks');
+            tasks = tasks.filter((t: Task) => t.id !== id);
+            setStore('tasks', tasks);
+            return { success: true };
+        }
+        const res = await fetch(`${API_URL}/tasks/${id}`, {
+            method: 'DELETE'
         });
         return res.json();
     },
@@ -191,7 +245,7 @@ export const api = {
 
     // Messages
     getMessages: async (userId: string) => {
-        if (isDemo) return getStore('messages').filter((m: any) => m.senderId === userId || m.receiverId === userId);
+        if (isDemo) return getStore('messages').filter((m: any) => m.fromId === userId || m.toId === userId);
         const res = await fetch(`${API_URL}/messages?userId=${userId}`);
         return res.json();
     },
@@ -284,12 +338,8 @@ export const api = {
     getActivityStats: async () => {
         if (isDemo) {
             const att = getStore('attendance');
-            const emps = getStore('employees');
-            return {
-                totalEmployees: emps.length,
-                presentToday: att.filter((a: any) => a.date === new Date().toISOString().split('T')[0]).length,
-                pendingTasks: getStore('tasks').filter((t: any) => t.status !== 'completed').length
-            };
+            // DirectorDashboard expects an array of date strings to filter
+            return att.map((a: any) => a.date);
         }
         const res = await fetch(`${API_URL}/stats/activity`);
         return res.json();

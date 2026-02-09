@@ -22,13 +22,18 @@ interface DirectorDashboardProps {
   setCurrentView: (v: any) => void;
   ideas: Suggestion[];
   setIdeas: React.Dispatch<React.SetStateAction<Suggestion[]>>;
+  notify: (type: 'success' | 'error' | 'info', message: string) => void;
+  requestConfirm: (title: string, message: string, onConfirm: () => void) => void;
+  requestPrompt: (title: string, message: string, placeholder: string, onConfirm: (v: string) => void) => void;
+  lang: string;
 }
 
 import { api } from '../api';
 
 const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
   catalogs, setCatalogs, employees, setEmployees, tasks, setTasks,
-  attendance, t, isDarkMode, currentView, setCurrentView, ideas, setIdeas
+  attendance, t, isDarkMode, currentView, setCurrentView, ideas, setIdeas,
+  notify, requestConfirm, requestPrompt, lang
 }) => {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [taskForm, setTaskForm] = useState({ title: '', description: '', toId: '' });
@@ -79,7 +84,8 @@ const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
       };
       api.addTask(newTask).then(() => {
         setTasks([...tasks, newTask]);
-      });
+        notify('success', lang === 'ru' ? "Задача успешно отправлена" : "Task sent successfully");
+      }).catch(() => notify('error', "Failed to send task"));
     }
     setTaskForm({ title: '', description: '', toId: '' });
     setAttachment(undefined);
@@ -87,22 +93,32 @@ const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
   };
 
   const deleteIdea = async (id: string) => {
-    if (confirm("Delete this suggestion from the log?")) {
-      try {
-        await api.deleteSuggestion(id);
-        setIdeas(ideas.filter(i => i.id !== id));
-      } catch (e) { console.error(e); }
-    }
+    requestConfirm(
+      lang === 'ru' ? "Удаление предложения" : "Delete Suggestion",
+      lang === 'ru' ? "Удалить это предложение из журнала?" : "Delete this suggestion from the log?",
+      async () => {
+        try {
+          await api.deleteSuggestion(id);
+          setIdeas(ideas.filter(i => i.id !== id));
+          notify('success', lang === 'ru' ? "Удалено" : "Deleted");
+        } catch (e) { notify('error', "Failed to delete"); }
+      }
+    );
   };
 
   const replyIdea = async (idea: Suggestion) => {
-    const text = prompt("Enter reply message to " + idea.authorName);
-    if (text) {
-      try {
-        await api.replySuggestion(idea.id, text, 'dir-1');
-        alert("Reply sent.");
-      } catch (e) { alert("Failed to send reply"); }
-    }
+    requestPrompt(
+      lang === 'ru' ? "Ответ сотруднику" : "Reply to Staff",
+      (lang === 'ru' ? "Введите сообщение для " : "Enter reply message to ") + idea.authorName,
+      lang === 'ru' ? "Ваш ответ..." : "Your reply...",
+      async (text) => {
+        if (!text) return;
+        try {
+          await api.replySuggestion(idea.id, text, 'dir-1');
+          notify('success', lang === 'ru' ? "Ответ отправлен" : "Reply sent");
+        } catch (e) { notify('error', "Failed to send reply"); }
+      }
+    );
   };
 
 

@@ -216,6 +216,14 @@ app.put('/api/employees/:id', (req, res) => {
     });
 });
 
+app.delete('/api/employees/:id', (req, res) => {
+    const { id } = req.params;
+    db.run(`DELETE FROM employees WHERE id = ?`, [id], function (err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true, changes: this.changes });
+    });
+});
+
 // --- CATALOGS ---
 app.get('/api/catalogs', (req, res) => {
     db.all(`SELECT * FROM catalogs`, [], (err, rows) => {
@@ -239,36 +247,78 @@ app.get('/api/tasks', (req, res) => {
         res.json(rows.map(r => ({
             ...r,
             attachment: r.attachment ? JSON.parse(r.attachment) : undefined,
-            resultAttachment: r.result_attachment ? JSON.parse(r.result_attachment) : undefined
+            resultAttachment: r.result_attachment ? JSON.parse(r.result_attachment) : undefined,
+            subTasks: r.sub_tasks ? JSON.parse(r.sub_tasks) : [],
+            isChainTask: !!r.is_chain_task,
+            chainStep: r.chain_step,
+            nextChainTaskId: r.next_chain_task_id,
+            parentTaskId: r.parent_task_id
         })));
     });
 });
 
 app.post('/api/tasks', (req, res) => {
     const t = req.body;
-    const sql = `INSERT INTO tasks (id, title, description, from_id, from_name, to_id, status, created_at, attachment) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-    db.run(sql, [t.id, t.title, t.description, t.fromId, t.fromName, t.toId, t.status, t.createdAt, t.attachment ? JSON.stringify(t.attachment) : null], function (err) {
+    const sql = `INSERT INTO tasks (
+        id, title, description, from_id, from_name, to_id, status, created_at, 
+        attachment, sub_tasks, parent_task_id, is_chain_task, chain_step, next_chain_task_id
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+    const params = [
+        t.id, t.title, t.description, t.fromId, t.fromName, t.toId, t.status, t.createdAt,
+        t.attachment ? JSON.stringify(t.attachment) : null,
+        t.subTasks ? JSON.stringify(t.subTasks) : null,
+        t.parentTaskId || null,
+        t.isChainTask ? 1 : 0,
+        t.chainStep || 0,
+        t.nextChainTaskId || null
+    ];
+
+    db.run(sql, params, function (err) {
         if (err) return res.status(500).json({ error: err.message });
-        res.json({ success: true });
+        res.json({ success: true, id: t.id });
     });
 });
 
 app.put('/api/tasks/:id', (req, res) => {
     const { id } = req.params;
-    const { status, resultAttachment } = req.body;
-    let sql = `UPDATE tasks SET status = ?`;
-    let params = [status];
+    const updates = req.body;
 
-    if (resultAttachment) {
-        sql += `, result_attachment = ?`;
-        params.push(JSON.stringify(resultAttachment));
+    const fieldMapping = {
+        status: 'status',
+        resultAttachment: 'result_attachment',
+        subTasks: 'sub_tasks',
+        updatedAt: 'updated_at'
+    };
+
+    const sets = [];
+    const params = [];
+
+    for (const [key, value] of Object.entries(updates)) {
+        if (fieldMapping[key]) {
+            sets.push(`${fieldMapping[key]} = ?`);
+            params.push(key === 'subTasks' || key === 'resultAttachment' ? JSON.stringify(value) : value);
+        }
     }
 
-    sql += ` WHERE id = ?`;
-    params.push(id);
+    if (sets.length === 0) return res.json({ success: true });
 
-    db.run(sql, params, function (err) {
+    params.push(id);
+    const sql = `UPDATE tasks SET ${sets.join(', ')} WHERE id = ?`;
+
+    db.run(sql, params, async function (err) {
         if (err) return res.status(500).json({ error: err.message });
+
+        // Logic for progression in task chain
+        if (updates.status === 'completed') {
+            db.get(`SELECT next_chain_task_id FROM tasks WHERE id = ?`, [id], (err, row) => {
+                if (row && row.next_chain_task_id) {
+                    // Start next task in chain
+                    db.run(`UPDATE tasks SET status = 'pending' WHERE id = ?`, [row.next_chain_task_id]);
+                }
+            });
+        }
+
         res.json({ success: true });
     });
 });

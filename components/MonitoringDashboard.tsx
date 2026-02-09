@@ -8,21 +8,28 @@ interface MonitoringDashboardProps {
   setAttendance: React.Dispatch<React.SetStateAction<AttendanceRecord[]>>;
   t: any;
   isDarkMode: boolean;
+  notify: (type: 'success' | 'error' | 'info', message: string) => void;
+  requestConfirm: (title: string, message: string, onConfirm: () => void) => void;
 }
 
-const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({ attendance, setAttendance, t, isDarkMode }) => {
+const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({ attendance, setAttendance, t, isDarkMode, notify, requestConfirm }) => {
   const formatTime = (ts?: number) => ts ? new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--';
   const formatDate = (dateStr: string) => new Date(dateStr).toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
 
   const handleDelete = async (id: string) => {
-    if (window.confirm(t.deleteConfirm || "Are you sure you want to delete this record?")) {
-      try {
-        await api.deleteAttendance(id);
-        setAttendance(prev => prev.filter(a => a.id !== id));
-      } catch (e) {
-        alert("Failed to delete record");
+    requestConfirm(
+      t.delete || "Delete",
+      t.deleteConfirm || "Are you sure you want to delete this record?",
+      async () => {
+        try {
+          await api.deleteAttendance(id);
+          setAttendance(prev => prev.filter(a => a.id !== id));
+          notify('success', t.deleted || "Record deleted");
+        } catch (e) {
+          notify('error', "Failed to delete record");
+        }
       }
-    }
+    );
   };
 
   const sortedAttendance = [...attendance].sort((a, b) => b.clockIn - a.clockIn);

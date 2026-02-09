@@ -18,8 +18,16 @@ db.serialize(() => {
     password TEXT,
     role TEXT,
     full_name TEXT,
-    employee_id TEXT
+    employee_id TEXT,
+    department_id TEXT
   )`);
+
+  // Add department_id to users if not exists
+  db.run(`ALTER TABLE users ADD COLUMN department_id TEXT`, (err) => {
+    if (err && !err.message.includes('duplicate column name')) {
+      // Ignore if column already exists
+    }
+  });
 
   // Catalogs (Departments)
   db.run(`CREATE TABLE IF NOT EXISTS catalogs (
@@ -67,8 +75,23 @@ db.serialize(() => {
     attachment TEXT, -- JSON {name, type, data...} or URL
     result_attachment TEXT, -- JSON
     assigned_worker_id TEXT,
+    sub_tasks TEXT, -- JSON array of SubTask
+    parent_task_id TEXT,
+    is_chain_task INTEGER DEFAULT 0,
+    chain_step INTEGER DEFAULT 0,
+    next_chain_task_id TEXT,
     FOREIGN KEY(to_id) REFERENCES employees(id)
   )`);
+
+  // Update tasks table with new columns if they don't exist
+  ['sub_tasks', 'parent_task_id', 'is_chain_task', 'chain_step', 'next_chain_task_id'].forEach(col => {
+    const type = col.includes('is_') || col.includes('_step') ? 'INTEGER DEFAULT 0' : 'TEXT';
+    db.run(`ALTER TABLE tasks ADD COLUMN ${col} ${type}`, (err) => {
+      if (err && !err.message.includes('duplicate column name')) {
+        // Ignore duplicate column errors
+      }
+    });
+  });
 
   // Attendance
   db.run(`CREATE TABLE IF NOT EXISTS attendance (
