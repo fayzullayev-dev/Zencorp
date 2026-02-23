@@ -259,20 +259,68 @@ const App: React.FC = () => {
                         <div className="flex items-center gap-3"><ListFilter size={14} /> {t.departments}</div>
                         {isDepartmentsOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                       </button>
-                      {isDepartmentsOpen && (
-                        <div className="space-y-1 pl-4">
-                          {catalogs.map(cat => (
-                            <NavItem
-                              key={cat.id} sub icon={ChevronRight} label={cat.name}
-                              active={currentView === `catalog-${cat.id}`}
-                              onClick={() => setCurrentView(`catalog-${cat.id}`)}
-                            />
-                          ))}
-                          {(currentUser.role === 'director') && (
-                            <NavItem sub icon={FolderPlus} label={t.addDep} active={activeModal === 'add_catalog'} onClick={() => setActiveModal('add_catalog')} />
-                          )}
-                        </div>
-                      )}
+                      {isDepartmentsOpen && (() => {
+                        // Build hierarchical catalog list
+                        const renderCatalog = (cat: any, depth: number = 0): JSX.Element => {
+                          const children = catalogs.filter(c => c.parentId === cat.id);
+                          const isActive = currentView === `catalog-${cat.id}`;
+                          return (
+                            <div key={cat.id}>
+                              <div
+                                className="flex items-center gap-1"
+                                onDragOver={(e) => { e.preventDefault(); e.currentTarget.style.background = 'rgba(99,102,241,0.1)'; }}
+                                onDragLeave={(e) => { e.currentTarget.style.background = ''; }}
+                                onDrop={(e) => {
+                                  e.currentTarget.style.background = '';
+                                  const empId = e.dataTransfer.getData('employeeId');
+                                  if (!empId) return;
+                                  const emp = employees.find(em => em.id === empId);
+                                  if (!emp) return;
+                                  requestConfirm(
+                                    lang === 'ru' ? 'Перевести сотрудника?' : 'Transfer Employee?',
+                                    lang === 'ru'
+                                      ? `Перевести "${emp.firstName} ${emp.lastName}" в отдел "${cat.name}"?`
+                                      : `Transfer "${emp.firstName} ${emp.lastName}" to "${cat.name}" department?`,
+                                    () => {
+                                      const updates = { catalogId: cat.id };
+                                      api.updateEmployee(empId, updates).then(() => {
+                                        setEmployees(prev => prev.map(em => em.id === empId ? { ...em, catalogId: cat.id } : em));
+                                        notify('success', lang === 'ru' ? `Сотрудник переведён в отдел "${cat.name}"` : `Employee moved to "${cat.name}"`);
+                                      }).catch(() => notify('error', lang === 'ru' ? 'Ошибка перевода' : 'Transfer failed'));
+                                    }
+                                  );
+                                }}
+                                style={{ paddingLeft: `${depth * 12 + 16}px` }}
+                              >
+                                <button
+                                  className={`flex-1 flex items-center gap-2 py-2 px-3 rounded-xl text-xs font-bold transition-all text-left ${isActive ? 'bg-indigo-600 text-white shadow-sm' : `${isDarkMode ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-50'}`}`}
+                                  onClick={() => setCurrentView(`catalog-${cat.id}`)}
+                                >
+                                  {depth > 0 && <ChevronRight size={10} className="opacity-50" />}
+                                  <span className="truncate">{cat.name}</span>
+                                  {children.length > 0 && (
+                                    <span className={`ml-auto text-[8px] font-black px-1.5 py-0.5 rounded ${isActive ? 'bg-white/20' : 'bg-indigo-100 text-indigo-500 dark:bg-indigo-900/30'}`}>
+                                      {children.length}
+                                    </span>
+                                  )}
+                                </button>
+                              </div>
+                              {children.map(child => renderCatalog(child, depth + 1))}
+                            </div>
+                          );
+                        };
+                        const rootCatalogs = catalogs.filter(c => !c.parentId);
+                        const orphans = catalogs.filter(c => c.parentId && !catalogs.find(p => p.id === c.parentId));
+                        return (
+                          <div className="space-y-0.5 pl-2 mt-1">
+                            {rootCatalogs.map(cat => renderCatalog(cat, 0))}
+                            {orphans.map(cat => renderCatalog(cat, 0))}
+                            {(currentUser.role === 'director') && (
+                              <NavItem sub icon={FolderPlus} label={t.addDep} active={activeModal === 'add_catalog'} onClick={() => setActiveModal('add_catalog')} />
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
                 </div>
@@ -383,6 +431,7 @@ const App: React.FC = () => {
             <TaskSender
               currentUser={currentUser}
               employees={employees}
+              catalogs={catalogs}
               setTasks={setTasks}
               notify={notify}
               isDarkMode={isDarkMode}

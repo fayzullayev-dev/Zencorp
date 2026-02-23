@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Catalog, Employee } from '../types';
-import { X, Camera, Upload, Phone, MapPin, Hash, Shield, Clock, Download, QrCode, Calendar, User as UserIcon } from 'lucide-react';
+import { X, Camera, Upload, Phone, MapPin, Hash, Shield, Clock, Download, QrCode, Calendar, User as UserIcon, Plus } from 'lucide-react';
 import { api, isDemo } from '../api';
 
 interface GlobalModalsProps {
@@ -36,7 +36,8 @@ const GlobalModals: React.FC<GlobalModalsProps> = ({
   });
 
   const [generatedID, setGeneratedID] = useState<string>('');
-  const [catForm, setCatForm] = useState({ name: '', positionsString: '' });
+  const [catForm, setCatForm] = useState({ name: '', parentId: '' });
+  const [positions, setPositions] = useState<string[]>(['']);
   const [isCameraActive, setIsCameraActive] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -192,24 +193,30 @@ const GlobalModals: React.FC<GlobalModalsProps> = ({
 
   const handleAddCatalog = async (e: React.FormEvent) => {
     e.preventDefault();
-    const pos = catForm.positionsString.split(',').map(p => p.trim()).filter(p => p !== '');
+    const pos = positions.map(p => p.trim()).filter(p => p !== '');
     if (!catForm.name || pos.length === 0) {
-      notify('error', lang === 'ru' ? "Заполните название и должности" : "Fill name and positions");
+      notify('error', lang === 'ru' ? "Заполните название и добавьте хотя бы одну должность" : "Fill name and add at least one position");
       return;
     }
 
-    const newCat = { id: `cat-${Date.now()}`, name: catForm.name, positions: pos };
+    const newCat = {
+      id: `cat-${Date.now()}`,
+      name: catForm.name,
+      positions: pos,
+      parentId: catForm.parentId || undefined
+    };
     try {
       const res = await api.addCatalog(newCat);
       if (res.error) throw new Error(res.error);
 
       setCatalogs(prev => [...prev, newCat]);
-      setCatForm({ name: '', positionsString: '' });
+      setCatForm({ name: '', parentId: '' });
+      setPositions(['']);
       setActiveModal(null);
-      notify('success', lang === 'ru' ? "Каталог успешно создан!" : "Catalog successfully created!");
+      notify('success', lang === 'ru' ? "Отдел успешно создан!" : "Department successfully created!");
     } catch (err: any) {
       console.error(err);
-      notify('error', lang === 'ru' ? `Ошибка создания каталога: ${err.message || 'Сервер недоступен'}` : `Catalog creation failed: ${err.message || 'Server unreachable'}`);
+      notify('error', lang === 'ru' ? `Ошибка создания отдела: ${err.message || 'Сервер недоступен'}` : `Department creation failed: ${err.message || 'Server unreachable'}`);
     }
   };
 
@@ -229,7 +236,7 @@ const GlobalModals: React.FC<GlobalModalsProps> = ({
       {activeModal === 'add_employee' && (
         <div className={`${cardClass} w-full max-w-5xl max-h-[95vh] flex flex-col p-0 rounded-[3.5rem] overflow-hidden`}>
           <div className="p-8 border-b border-slate-100/10 flex justify-between items-center bg-indigo-600 text-white">
-            <h4 className="text-3xl font-black italic tracking-tighter">ZEN<span className="opacity-50">REGISTRY</span></h4>
+            <h4 className="text-3xl font-black tracking-tighter">ZEN<span className="opacity-50">REGISTRY</span></h4>
             <button onClick={() => { setActiveModal(null); if (isCameraActive) stopCamera(); }} className="p-2 hover:bg-white/10 rounded-xl transition-colors"><X /></button>
           </div>
 
@@ -402,21 +409,69 @@ const GlobalModals: React.FC<GlobalModalsProps> = ({
       )}
 
       {activeModal === 'add_catalog' && (
-        <div className={`${cardClass} w-full max-w-md animate-in zoom-in-95 my-auto p-10`}>
+        <div className={`${cardClass} w-full max-w-lg animate-in zoom-in-95 my-auto p-10`}>
           <div className="flex justify-between items-center mb-10">
-            <h4 className="text-2xl font-black italic tracking-tighter">{lang === 'ru' ? 'Создать отдел' : 'Create Department'}</h4>
+            <h4 className="text-2xl font-black tracking-tighter">
+              {lang === 'ru' ? 'Создать отдел' : lang === 'en' ? 'Create Department' : 'Bo\'lim yaratish'}
+            </h4>
             <button onClick={() => setActiveModal(null)} className="p-2 bg-slate-100 dark:bg-slate-800 rounded-xl"><X size={20} /></button>
           </div>
-          <form onSubmit={handleAddCatalog} className="space-y-8">
+          <form onSubmit={handleAddCatalog} className="space-y-6">
             <div className="space-y-1">
-              <label className={labelClass}>{lang === 'ru' ? 'Имя отдела' : 'Department Name'}</label>
+              <label className={labelClass}>{lang === 'ru' ? 'Название отдела' : lang === 'en' ? 'Department Name' : 'Bo\'lim nomi'}</label>
               <input required className={inputClass} placeholder={lang === 'ru' ? "Напр. Бухгалтерия" : "e.g. Accounting"} value={catForm.name} onChange={e => setCatForm({ ...catForm, name: e.target.value })} />
             </div>
-            <div className="space-y-1">
-              <label className={labelClass}>{lang === 'ru' ? 'Список должностей (через запятую)' : 'Positions List (comma separated)'}</label>
-              <textarea required className={`${inputClass} h-32 resize-none`} placeholder={lang === 'ru' ? "Главбух, Кассир, Ревизор..." : "Accountant, Cashier..."} value={catForm.positionsString} onChange={e => setCatForm({ ...catForm, positionsString: e.target.value })} />
+
+            {/* Parent department selector */}
+            {catalogs.filter(c => !c.parentId).length > 0 && (
+              <div className="space-y-1">
+                <label className={labelClass}>{lang === 'ru' ? 'Подчиняется отделу (опционально)' : lang === 'en' ? 'Parent Department (optional)' : 'Asosiy bo\'lim (ixtiyoriy)'}</label>
+                <select className={inputClass} value={catForm.parentId} onChange={e => setCatForm({ ...catForm, parentId: e.target.value })}>
+                  <option value="">{lang === 'ru' ? '— Самостоятельный отдел —' : lang === 'en' ? '— Standalone Department —' : '— Mustaqil bo\'lim —'}</option>
+                  {catalogs.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+            )}
+
+            {/* Dynamic positions list */}
+            <div className="space-y-2">
+              <label className={labelClass}>{lang === 'ru' ? 'Должности' : lang === 'en' ? 'Positions' : 'Lavozimlar'}</label>
+              {positions.map((pos, idx) => (
+                <div key={idx} className="flex gap-2">
+                  <input
+                    required
+                    className={`${inputClass} flex-1`}
+                    placeholder={lang === 'ru' ? `Должность ${idx + 1}...` : `Position ${idx + 1}...`}
+                    value={pos}
+                    onChange={e => {
+                      const next = [...positions];
+                      next[idx] = e.target.value;
+                      setPositions(next);
+                    }}
+                  />
+                  {positions.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => setPositions(positions.filter((_, i) => i !== idx))}
+                      className="p-3 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-xl hover:bg-red-100 transition-colors"
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => setPositions([...positions, ''])}
+                className="w-full py-3 border-2 border-dashed border-indigo-100 dark:border-indigo-900/50 text-indigo-500 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all flex items-center justify-center gap-2"
+              >
+                <Plus size={14} /> {lang === 'ru' ? 'Добавить должность' : lang === 'en' ? 'Add Position' : 'Lavozim qo\'shish'}
+              </button>
             </div>
-            <button type="submit" className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-indigo-100">{lang === 'ru' ? 'Инициализировать отдел' : 'Initialize Department'}</button>
+
+            <button type="submit" className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-indigo-100 dark:shadow-none hover:bg-indigo-700 transition-colors">
+              {lang === 'ru' ? 'Создать отдел' : lang === 'en' ? 'Create Department' : 'Bo\'lim yaratish'}
+            </button>
           </form>
         </div>
       )}

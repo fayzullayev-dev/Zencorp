@@ -228,16 +228,22 @@ app.delete('/api/employees/:id', (req, res) => {
 app.get('/api/catalogs', (req, res) => {
     db.all(`SELECT * FROM catalogs`, [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
-        res.json(rows.map(r => ({ ...r, positions: JSON.parse(r.positions || '[]') })));
+        res.json(rows.map(r => ({
+            id: r.id,
+            name: r.name,
+            positions: JSON.parse(r.positions || '[]'),
+            parentId: r.parent_id || undefined
+        })));
     });
 });
 
 app.post('/api/catalogs', (req, res) => {
-    const { id, name, positions } = req.body;
-    db.run(`INSERT INTO catalogs (id, name, positions) VALUES (?, ?, ?)`, [id, name, JSON.stringify(positions)], function (err) {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ success: true });
-    });
+    const { id, name, positions, parentId } = req.body;
+    db.run(`INSERT INTO catalogs (id, name, positions, parent_id) VALUES (?, ?, ?, ?)`,
+        [id, name, JSON.stringify(positions), parentId || null], function (err) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true });
+        });
 });
 
 // --- TASKS ---
@@ -245,14 +251,26 @@ app.get('/api/tasks', (req, res) => {
     db.all(`SELECT * FROM tasks`, [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(rows.map(r => ({
-            ...r,
+            id: r.id,
+            title: r.title,
+            description: r.description,
+            fromId: r.from_id,
+            fromName: r.from_name || null,
+            toId: r.to_id,
+            toName: r.to_name || null,
+            status: r.status,
+            createdAt: typeof r.created_at === 'number' ? r.created_at : parseInt(r.created_at) || Date.now(),
+            updatedAt: r.updated_at || undefined,
+            fromManagerId: r.from_manager_id || undefined,
+            assignedWorkerId: r.assigned_worker_id || undefined,
+            hrReviewerId: r.hr_reviewer_id || undefined,
             attachment: r.attachment ? JSON.parse(r.attachment) : undefined,
             resultAttachment: r.result_attachment ? JSON.parse(r.result_attachment) : undefined,
             subTasks: r.sub_tasks ? JSON.parse(r.sub_tasks) : [],
             isChainTask: !!r.is_chain_task,
-            chainStep: r.chain_step,
-            nextChainTaskId: r.next_chain_task_id,
-            parentTaskId: r.parent_task_id
+            chainStep: r.chain_step || undefined,
+            nextChainTaskId: r.next_chain_task_id || undefined,
+            parentTaskId: r.parent_task_id || undefined
         })));
     });
 });
@@ -260,12 +278,15 @@ app.get('/api/tasks', (req, res) => {
 app.post('/api/tasks', (req, res) => {
     const t = req.body;
     const sql = `INSERT INTO tasks (
-        id, title, description, from_id, from_name, to_id, status, created_at, 
+        id, title, description, from_id, from_name, to_id, to_name, status, created_at,
+        from_manager_id, assigned_worker_id, hr_reviewer_id,
         attachment, sub_tasks, parent_task_id, is_chain_task, chain_step, next_chain_task_id
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
     const params = [
-        t.id, t.title, t.description, t.fromId, t.fromName, t.toId, t.status, t.createdAt,
+        t.id, t.title, t.description, t.fromId, t.fromName || null, t.toId, t.toName || null,
+        t.status, t.createdAt || Date.now(),
+        t.fromManagerId || null, t.assignedWorkerId || null, t.hrReviewerId || null,
         t.attachment ? JSON.stringify(t.attachment) : null,
         t.subTasks ? JSON.stringify(t.subTasks) : null,
         t.parentTaskId || null,

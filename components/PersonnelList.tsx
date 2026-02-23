@@ -107,9 +107,9 @@ const PersonnelList: React.FC<PersonnelListProps> = ({
           <div className="w-24 h-24 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-300">
             {viewType === 'archive' ? <Archive size={40} /> : <Search size={40} />}
           </div>
-          <p className="text-slate-400 font-bold uppercase tracking-widest text-xs italic">
-            {viewType === 'catalog' ? "В этом разделе пока нет сотрудников." :
-              viewType === 'archive' ? "Архив пуст." : "Поиск не дал результатов."}
+          <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">
+            {viewType === 'catalog' ? (lang === 'ru' ? 'В этом разделе пока нет сотрудников.' : 'No employees in this department.') :
+              viewType === 'archive' ? (lang === 'ru' ? 'Архив пуст.' : 'Archive is empty.') : (lang === 'ru' ? 'Поиск не дал результатов.' : 'No results found.')}
           </p>
         </div>
       );
@@ -134,6 +134,12 @@ const PersonnelList: React.FC<PersonnelListProps> = ({
                   key={emp.id}
                   className="hover:bg-indigo-500/5 transition-all group cursor-pointer"
                   onClick={() => setSelectedEmp(emp)}
+                  draggable={viewType !== 'archive'}
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData('employeeId', emp.id);
+                    e.dataTransfer.effectAllowed = 'move';
+                  }}
+                  title={viewType !== 'archive' ? (lang === 'ru' ? 'Перетащите для смены отдела' : 'Drag to change department') : undefined}
                 >
                   <td className="px-8 py-5 text-[10px] font-black font-mono text-indigo-500">{emp.id.slice(-6)}</td>
                   <td className="px-8 py-5 flex items-center gap-4">
@@ -180,12 +186,14 @@ const PersonnelList: React.FC<PersonnelListProps> = ({
 
   const currentTitle = viewType === 'catalog'
     ? catalogs.find(c => c.id === catalogId)?.name
-    : viewType === 'archive' ? 'Защищенный архив' : `Реестр ${viewType === 'workers' ? 'сотрудников' : ''}`;
+    : viewType === 'archive'
+      ? (lang === 'ru' ? 'Защищенный архив' : 'Secure Archive')
+      : (lang === 'ru' ? 'Список сотрудников' : lang === 'uz' ? 'Xodimlar ro\'yxati' : 'Employee Directory');
 
   return (
     <div className="space-y-10 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <h2 className="text-4xl font-black italic tracking-tighter uppercase">
+        <h2 className="text-4xl font-black tracking-tighter uppercase">
           {currentTitle}
         </h2>
         <div className="relative w-full md:w-96">
@@ -240,7 +248,7 @@ const PersonnelList: React.FC<PersonnelListProps> = ({
                 </div>
                 <div className="col-span-2 space-y-1">
                   <p className="text-[10px] font-black uppercase text-slate-400">Место жительства</p>
-                  <p className="font-bold text-slate-800 dark:text-slate-200 italic">{selectedEmp.residence}</p>
+                  <p className="font-bold text-slate-800 dark:text-slate-200">{selectedEmp.residence}</p>
                 </div>
               </div>
 

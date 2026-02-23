@@ -20,6 +20,7 @@ export interface Catalog {
   id: string;
   name: string;
   positions: string[];
+  parentId?: string;
 }
 
 export interface FileAttachment {

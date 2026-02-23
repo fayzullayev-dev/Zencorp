@@ -84,13 +84,21 @@ db.serialize(() => {
   )`);
 
   // Update tasks table with new columns if they don't exist
-  ['sub_tasks', 'parent_task_id', 'is_chain_task', 'chain_step', 'next_chain_task_id'].forEach(col => {
-    const type = col.includes('is_') || col.includes('_step') ? 'INTEGER DEFAULT 0' : 'TEXT';
-    db.run(`ALTER TABLE tasks ADD COLUMN ${col} ${type}`, (err) => {
-      if (err && !err.message.includes('duplicate column name')) {
-        // Ignore duplicate column errors
-      }
+  ['sub_tasks', 'parent_task_id', 'is_chain_task', 'chain_step', 'next_chain_task_id',
+    'to_name', 'from_manager_id', 'assigned_worker_id', 'hr_reviewer_id'].forEach(col => {
+      const type = col.includes('is_') || col.includes('_step') ? 'INTEGER DEFAULT 0' : 'TEXT';
+      db.run(`ALTER TABLE tasks ADD COLUMN ${col} ${type}`, (err) => {
+        if (err && !err.message.includes('duplicate column name')) {
+          // Ignore duplicate column errors
+        }
+      });
     });
+
+  // Add parent_id to catalogs if not exists (for sub-departments)
+  db.run(`ALTER TABLE catalogs ADD COLUMN parent_id TEXT`, (err) => {
+    if (err && !err.message.includes('duplicate column name')) {
+      // Ignore
+    }
   });
 
   // Attendance

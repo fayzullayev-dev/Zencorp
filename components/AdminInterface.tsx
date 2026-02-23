@@ -41,7 +41,7 @@ const AdminInterface: React.FC<AdminInterfaceProps> = ({ employees, setEmployees
           <ShieldCheck size={32} />
         </div>
         <div>
-          <h2 className="text-3xl font-black tracking-tighter uppercase italic">{t.hierarchy}</h2>
+          <h2 className="text-3xl font-black tracking-tighter uppercase">{t.hierarchy}</h2>
           <p className={`${isDarkMode ? 'text-slate-400' : 'text-slate-500'} font-bold`}>Define and manage company reporting lines and chain of command.</p>
         </div>
       </div>
