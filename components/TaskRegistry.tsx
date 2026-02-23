@@ -149,7 +149,7 @@ const TaskRegistry: React.FC<TaskRegistryProps> = ({ tasks, currentUser, viewTyp
                 {filteredTasks.length === 0 && (
                     <div className="col-span-full py-40 text-center flex flex-col items-center gap-6 opacity-30">
                         <FileText size={64} className="text-slate-300" />
-                        <p className="font-black uppercase tracking-widest text-xs italic">Список задач пуст</p>
+                        <p className="font-black uppercase tracking-widest text-xs">Список задач пуст</p>
                     </div>
                 )}
             </div>
