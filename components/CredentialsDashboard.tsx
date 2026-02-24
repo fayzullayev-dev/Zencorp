@@ -39,7 +39,7 @@ const CredentialsDashboard: React.FC<CredentialsDashboardProps> = ({ employees, 
         </div>
         <div>
           <h2 className="text-3xl font-black text-slate-900 tracking-tight">Access Control</h2>
-          <p className="text-slate-400 font-medium italic">Configure system identifiers and security keys for personnel.</p>
+          <p className="text-slate-400 font-medium">Configure system identifiers and security keys for personnel.</p>
         </div>
       </div>
 
@@ -96,7 +96,7 @@ const CredentialsDashboard: React.FC<CredentialsDashboardProps> = ({ employees, 
           </div>
         ))}
         {employees.length === 0 && (
-          <div className="col-span-full py-20 text-center text-slate-300 italic font-medium">No personnel detected to configure.</div>
+          <div className="col-span-full py-20 text-center text-slate-300 font-medium">No personnel detected to configure.</div>
         )}
       </div>
     </div>

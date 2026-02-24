@@ -63,7 +63,7 @@ const TaskWorkflowManager: React.FC<TaskWorkflowManagerProps> = ({ tasks, curren
                     <Clock size={24} />
                 </div>
                 <div>
-                    <h3 className="text-2xl font-black italic uppercase tracking-tighter">Мониторинг процессов</h3>
+                    <h3 className="text-2xl font-black uppercase tracking-tighter">Мониторинг процессов</h3>
                     <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Отслеживание цепочек делегирования</p>
                 </div>
             </div>

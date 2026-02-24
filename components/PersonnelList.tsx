@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Employee, Catalog, AttendanceRecord, User, Language } from '../types';
-import { Search, Phone, MapPin, FileText, Download, Shield, Mail, CheckCircle, Trash2, Archive, UserX, Hash } from 'lucide-react';
+import { Search, Phone, MapPin, FileText, Download, Shield, Mail, CheckCircle, Trash2, Archive, UserX, Hash, ArrowRightLeft, UserCog, Users, X } from 'lucide-react';
 import { api } from '../api';
 
 interface PersonnelListProps {
@@ -24,6 +24,9 @@ const PersonnelList: React.FC<PersonnelListProps> = ({
 }) => {
   const [query, setQuery] = useState('');
   const [selectedEmp, setSelectedEmp] = useState<Employee | null>(null);
+  const [transferEmp, setTransferEmp] = useState<Employee | null>(null);
+  const [transferForm, setTransferForm] = useState({ catalogId: '', position: '' });
+
   const today = new Date().toISOString().split('T')[0];
 
   const getStatus = (emp: Employee) => {
@@ -134,12 +137,6 @@ const PersonnelList: React.FC<PersonnelListProps> = ({
                   key={emp.id}
                   className="hover:bg-indigo-500/5 transition-all group cursor-pointer"
                   onClick={() => setSelectedEmp(emp)}
-                  draggable={viewType !== 'archive'}
-                  onDragStart={(e) => {
-                    e.dataTransfer.setData('employeeId', emp.id);
-                    e.dataTransfer.effectAllowed = 'move';
-                  }}
-                  title={viewType !== 'archive' ? (lang === 'ru' ? 'Перетащите для смены отдела' : 'Drag to change department') : undefined}
                 >
                   <td className="px-8 py-5 text-[10px] font-black font-mono text-indigo-500">{emp.id.slice(-6)}</td>
                   <td className="px-8 py-5 flex items-center gap-4">
@@ -170,7 +167,16 @@ const PersonnelList: React.FC<PersonnelListProps> = ({
                         <button onClick={() => handleDelete(emp.id)} className="p-2 bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-all"><Trash2 size={14} /></button>
                       </div>
                     ) : (
-                      <button onClick={() => handleArchive(emp.id)} className="p-2 bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-all opacity-0 group-hover:opacity-100"><UserX size={14} /></button>
+                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100">
+                        <button
+                          onClick={() => { setTransferEmp(emp); setTransferForm({ catalogId: emp.catalogId, position: emp.position }); }}
+                          className="p-2 bg-indigo-500/10 text-indigo-500 rounded-lg hover:bg-indigo-500 hover:text-white transition-all"
+                          title={lang === 'ru' ? 'Перевести' : 'Transfer'}
+                        >
+                          <ArrowRightLeft size={14} />
+                        </button>
+                        <button onClick={() => handleArchive(emp.id)} className="p-2 bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-all"><UserX size={14} /></button>
+                      </div>
                     )}
                   </td>
                 </tr>
@@ -193,7 +199,8 @@ const PersonnelList: React.FC<PersonnelListProps> = ({
   return (
     <div className="space-y-10 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <h2 className="text-4xl font-black tracking-tighter uppercase">
+        <h2 className="text-4xl font-black tracking-tighter uppercase flex items-center gap-4">
+          {viewType === 'archive' ? <Archive size={36} className="text-indigo-500" /> : <Users size={36} className="text-indigo-500" />}
           {currentTitle}
         </h2>
         <div className="relative w-full md:w-96">
@@ -258,6 +265,69 @@ const PersonnelList: React.FC<PersonnelListProps> = ({
                   <span>Дни: {selectedEmp.workingDays.join(', ')}</span>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {transferEmp && (
+        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-[2000] flex items-center justify-center p-4">
+          <div
+            className={`${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'} w-full max-w-md rounded-[2.5rem] shadow-2xl p-10 border transition-all animate-in zoom-in-95`}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-8">
+              <h3 className="text-2xl font-black tracking-tighter uppercase">{lang === 'ru' ? 'Перевод сотрудника' : 'Transfer Personnel'}</h3>
+              <button onClick={() => setTransferEmp(null)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors"><X size={24} /></button>
+            </div>
+
+            <div className="flex items-center gap-4 mb-8 p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
+              <img src={transferEmp.photoUrl} className="w-12 h-16 rounded-lg object-cover" />
+              <div>
+                <p className="font-bold text-slate-900 dark:text-white">{transferEmp.lastName} {transferEmp.firstName}</p>
+                <p className="text-[10px] text-slate-400 font-black uppercase">{transferEmp.position}</p>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase px-2 tracking-widest">Целевой отдел</label>
+                <select
+                  className={inputClass}
+                  value={transferForm.catalogId}
+                  onChange={e => setTransferForm({ catalogId: e.target.value, position: '' })}
+                >
+                  <option value="">Выберите отдел...</option>
+                  {catalogs.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase px-2 tracking-widest">Новая должность</label>
+                <select
+                  className={inputClass}
+                  value={transferForm.position}
+                  onChange={e => setTransferForm({ ...transferForm, position: e.target.value })}
+                  disabled={!transferForm.catalogId}
+                >
+                  <option value="">Выберите должность...</option>
+                  {catalogs.find(c => c.id === transferForm.catalogId)?.positions.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+              </div>
+
+              <button
+                onClick={() => {
+                  if (!transferForm.catalogId || !transferForm.position) return;
+                  api.updateEmployee(transferEmp.id, { catalogId: transferForm.catalogId, position: transferForm.position }).then(() => {
+                    setEmployees(prev => prev.map(e => e.id === transferEmp.id ? { ...e, catalogId: transferForm.catalogId, position: transferForm.position } : e));
+                    setTransferEmp(null);
+                    notify('success', lang === 'ru' ? 'Данные сотрудника обновлены' : 'Employee details updated');
+                  }).catch(() => notify('error', 'Update failed'));
+                }}
+                className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-indigo-200 hover:scale-[1.02] active:scale-95 transition-all mt-4"
+              >
+                Подтвердить перевод
+              </button>
             </div>
           </div>
         </div>

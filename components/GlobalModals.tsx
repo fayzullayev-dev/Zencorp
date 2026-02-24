@@ -419,7 +419,7 @@ const GlobalModals: React.FC<GlobalModalsProps> = ({
           <form onSubmit={handleAddCatalog} className="space-y-6">
             <div className="space-y-1">
               <label className={labelClass}>{lang === 'ru' ? 'Название отдела' : lang === 'en' ? 'Department Name' : 'Bo\'lim nomi'}</label>
-              <input required className={inputClass} placeholder={lang === 'ru' ? "Напр. Бухгалтерия" : "e.g. Accounting"} value={catForm.name} onChange={e => setCatForm({ ...catForm, name: e.target.value })} />
+              <input required className={inputClass} placeholder={lang === 'ru' ? "Введите название отдела" : "Enter department name"} value={catForm.name} onChange={e => setCatForm({ ...catForm, name: e.target.value })} />
             </div>
 
             {/* Parent department selector */}

@@ -32,7 +32,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, employees }) => {
       <div className="w-full max-w-md bg-white rounded-[3.5rem] shadow-[0_50px_100px_rgba(0,0,0,0.1)] p-12 border border-white relative z-10 animate-in zoom-in-95 duration-700">
         <div className="text-center mb-12">
           <div className="inline-flex items-center justify-center w-20 h-20 bg-slate-900 rounded-[2rem] shadow-2xl mb-6"><span className="text-white text-3xl font-black">ZC</span></div>
-          <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic">Terminal Auth</h2>
+          <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase">Terminal Auth</h2>
           <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.4em] mt-2">Security Key Required</p>
         </div>
 

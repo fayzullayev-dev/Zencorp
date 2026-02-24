@@ -45,7 +45,7 @@ const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({ attendance, s
           </div>
           <div>
             <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Personnel Monitoring</h2>
-            <p className="text-slate-400 font-medium italic">Real-time arrival and departure registry.</p>
+            <p className="text-slate-400 font-medium">Real-time arrival and departure registry.</p>
           </div>
         </div>
       </div>
@@ -113,7 +113,7 @@ const MonitoringDashboard: React.FC<MonitoringDashboardProps> = ({ attendance, s
             ))}
             {sortedAttendance.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-8 py-20 text-center text-slate-300 italic text-sm font-medium">
+                <td colSpan={5} className="px-8 py-20 text-center text-slate-300 text-sm font-medium">
                   No active or historical attendance records detected in the registry.
                 </td>
               </tr>

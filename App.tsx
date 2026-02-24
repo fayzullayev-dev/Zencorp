@@ -268,28 +268,9 @@ const App: React.FC = () => {
                             <div key={cat.id}>
                               <div
                                 className="flex items-center gap-1"
-                                onDragOver={(e) => { e.preventDefault(); e.currentTarget.style.background = 'rgba(99,102,241,0.1)'; }}
-                                onDragLeave={(e) => { e.currentTarget.style.background = ''; }}
-                                onDrop={(e) => {
-                                  e.currentTarget.style.background = '';
-                                  const empId = e.dataTransfer.getData('employeeId');
-                                  if (!empId) return;
-                                  const emp = employees.find(em => em.id === empId);
-                                  if (!emp) return;
-                                  requestConfirm(
-                                    lang === 'ru' ? 'Перевести сотрудника?' : 'Transfer Employee?',
-                                    lang === 'ru'
-                                      ? `Перевести "${emp.firstName} ${emp.lastName}" в отдел "${cat.name}"?`
-                                      : `Transfer "${emp.firstName} ${emp.lastName}" to "${cat.name}" department?`,
-                                    () => {
-                                      const updates = { catalogId: cat.id };
-                                      api.updateEmployee(empId, updates).then(() => {
-                                        setEmployees(prev => prev.map(em => em.id === empId ? { ...em, catalogId: cat.id } : em));
-                                        notify('success', lang === 'ru' ? `Сотрудник переведён в отдел "${cat.name}"` : `Employee moved to "${cat.name}"`);
-                                      }).catch(() => notify('error', lang === 'ru' ? 'Ошибка перевода' : 'Transfer failed'));
-                                    }
-                                  );
-                                }}
+                                onDragOver={(e) => { e.preventDefault(); }}
+                                onDragLeave={(e) => { }}
+                                onDrop={(e) => { }}
                                 style={{ paddingLeft: `${depth * 12 + 16}px` }}
                               >
                                 <button
@@ -298,11 +279,6 @@ const App: React.FC = () => {
                                 >
                                   {depth > 0 && <ChevronRight size={10} className="opacity-50" />}
                                   <span className="truncate">{cat.name}</span>
-                                  {children.length > 0 && (
-                                    <span className={`ml-auto text-[8px] font-black px-1.5 py-0.5 rounded ${isActive ? 'bg-white/20' : 'bg-indigo-100 text-indigo-500 dark:bg-indigo-900/30'}`}>
-                                      {children.length}
-                                    </span>
-                                  )}
                                 </button>
                               </div>
                               {children.map(child => renderCatalog(child, depth + 1))}

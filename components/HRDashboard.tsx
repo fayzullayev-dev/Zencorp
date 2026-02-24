@@ -35,7 +35,7 @@ const HRDashboard: React.FC<HRDashboardProps> = ({
           <ShieldCheck size={32} />
         </div>
         <div>
-          <h2 className="text-3xl font-black italic tracking-tighter uppercase">Центр верификации HR</h2>
+          <h2 className="text-3xl font-black tracking-tighter uppercase">Центр верификации HR</h2>
           <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest mt-1">Проверка допусков и валидация рабочих процессов активна</p>
         </div>
       </div>
@@ -71,7 +71,7 @@ const HRDashboard: React.FC<HRDashboardProps> = ({
             {tasksToDelegate.length === 0 && (
               <div className="py-20 text-center opacity-20">
                 <UserCheck size={48} className="mx-auto text-slate-400 mb-4" />
-                <p className="text-[10px] font-black uppercase tracking-widest italic">Нет задач для делегирования</p>
+                <p className="text-[10px] font-black uppercase tracking-widest">Нет задач для делегирования</p>
               </div>
             )}
           </div>
@@ -88,7 +88,7 @@ const HRDashboard: React.FC<HRDashboardProps> = ({
               return (
                 <div key={task.id} className="bg-white dark:bg-slate-900 p-8 rounded-[2rem] border-l-8 border-l-emerald-500 border border-slate-100 dark:border-slate-800 shadow-md">
                   <h4 className="font-black text-slate-900 dark:text-white mb-2 text-lg">{task.title}</h4>
-                  <p className="text-[10px] text-slate-400 mb-8 font-black uppercase tracking-widest italic">Отправил: {worker?.lastName} {worker?.firstName}</p>
+                  <p className="text-[10px] text-slate-400 mb-8 font-black uppercase tracking-widest">Отправил: {worker?.lastName} {worker?.firstName}</p>
 
                   {task.resultAttachment && (
                     <div className="mb-8 p-5 bg-emerald-50 dark:bg-emerald-900/20 rounded-[1.5rem] border border-emerald-100 dark:border-emerald-800/30 flex items-center justify-between">
@@ -116,7 +116,7 @@ const HRDashboard: React.FC<HRDashboardProps> = ({
             {tasksToReview.length === 0 && (
               <div className="py-20 text-center opacity-20">
                 <CheckCircle size={48} className="mx-auto text-slate-400 mb-4" />
-                <p className="text-[10px] font-black uppercase tracking-widest italic">Нет результатов на проверку</p>
+                <p className="text-[10px] font-black uppercase tracking-widest">Нет результатов на проверку</p>
               </div>
             )}
           </div>

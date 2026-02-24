@@ -137,7 +137,7 @@ const ManagerDashboard: React.FC<ManagerDashboardProps> = ({
         <div className="bg-indigo-600 p-10 rounded-[2.5rem] shadow-2xl shadow-indigo-200 text-white relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform"><Users size={80} /></div>
           <p className="text-xs font-black uppercase tracking-[0.3em] mb-2 opacity-80">Общий штат</p>
-          <p className="text-5xl font-black italic">{employees.length}</p>
+          <p className="text-5xl font-black">{employees.length}</p>
           <div className="mt-6 flex items-center gap-2 text-[10px] font-bold bg-white/10 w-fit px-4 py-2 rounded-full">
             <CheckCircle size={12} /> Активные единицы
           </div>
@@ -146,7 +146,7 @@ const ManagerDashboard: React.FC<ManagerDashboardProps> = ({
         <div className="bg-slate-900 p-10 rounded-[2.5rem] shadow-2xl shadow-slate-200 text-white relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform"><Send size={80} /></div>
           <p className="text-xs font-black uppercase tracking-[0.3em] mb-2 opacity-80">Активные задачи</p>
-          <p className="text-5xl font-black italic">{tasks.filter(t => t.status !== 'completed').length}</p>
+          <p className="text-5xl font-black">{tasks.filter(t => t.status !== 'completed').length}</p>
           <div className="mt-6 flex items-center gap-2 text-[10px] font-bold bg-white/10 w-fit px-4 py-2 rounded-full">
             <Clock size={12} /> Требуют внимания
           </div>
@@ -162,7 +162,10 @@ const ManagerDashboard: React.FC<ManagerDashboardProps> = ({
 
       <div className="bg-white rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden">
         <div className="p-8 border-b border-slate-50 flex justify-between items-center">
-          <h2 className="text-2xl font-black italic tracking-tighter uppercase">Обзор персонала</h2>
+          <h2 className="text-2xl font-black tracking-tighter uppercase flex items-center gap-4">
+            <Users size={28} className="text-indigo-600" />
+            Обзор персонала
+          </h2>
         </div>
         <table className="w-full text-left">
           <thead className="bg-slate-50 text-slate-400 text-[10px] uppercase font-black tracking-[0.2em]">

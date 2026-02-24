@@ -114,7 +114,7 @@ const AdminInterface: React.FC<AdminInterfaceProps> = ({ employees, setEmployees
               );
             })}
             {employees.filter(e => e.reportsToId).length === 0 && (
-              <div className="py-24 text-center text-slate-300 text-[10px] font-black uppercase tracking-widest italic border-2 border-dashed border-slate-100/10 rounded-[3rem]">
+              <div className="py-24 text-center text-slate-300 text-[10px] font-black uppercase tracking-widest border-2 border-dashed border-slate-100/10 rounded-[3rem]">
                 No hierarchical data available.
               </div>
             )}

@@ -5,7 +5,7 @@ import {
   Plus, Edit2, Trash2, Send, Paperclip, Upload, X, Phone, Camera, Folder,
   Inbox, CheckCircle, FileText, Download, Users, TrendingUp, Clock, AlertCircle,
   MapPin, Hash, Shield, History, Eye, Search, ChevronRight, MessageSquare, Lightbulb,
-  ClipboardCheck
+  ClipboardCheck, LayoutDashboard
 } from 'lucide-react';
 
 interface DirectorDashboardProps {
@@ -131,7 +131,10 @@ const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
     return (
       <div className="space-y-10 animate-in fade-in duration-500">
         <div className="flex justify-between items-center">
-          <h2 className="text-4xl font-black italic tracking-tighter">{t.home}</h2>
+          <h2 className="text-4xl font-black tracking-tighter flex items-center gap-4">
+            <LayoutDashboard size={36} className="text-indigo-600" />
+            {t.home}
+          </h2>
           <p className={`${isDarkMode ? 'text-slate-400' : 'text-slate-500'} font-bold`}>{new Date().toLocaleDateString()}</p>
         </div>
 
@@ -144,10 +147,10 @@ const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
 
         {/* Received Task Reports Section */}
         <div className={cardClass}>
-          <h3 className="text-xl font-black mb-8 italic underline decoration-indigo-500 underline-offset-8">Received Mission Reports</h3>
+          <h3 className="text-xl font-black mb-8 underline decoration-indigo-500 underline-offset-8">Received Mission Reports</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {tasks.filter(t => t.status === 'completed').length === 0 ? (
-              <div className="col-span-full py-16 text-center text-slate-300 italic text-sm">No task reports submitted yet.</div>
+              <div className="col-span-full py-16 text-center text-slate-300 text-sm">No task reports submitted yet.</div>
             ) : tasks.filter(t => t.status === 'completed').reverse().map(task => {
               const worker = employees.find(e => e.id === task.toId);
               return (
@@ -162,7 +165,7 @@ const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
                     </div>
                     <ClipboardCheck className="text-emerald-500" size={20} />
                   </div>
-                  <p className="text-xs text-slate-400 italic mb-6 line-clamp-3 whitespace-pre-wrap">{task.description}</p>
+                  <p className="text-xs text-slate-400 mb-6 line-clamp-3 whitespace-pre-wrap">{task.description}</p>
                   {task.resultAttachment && (
                     <div className="mt-auto p-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/20 flex items-center justify-between">
                       <div className="flex items-center gap-2 overflow-hidden">
@@ -182,7 +185,7 @@ const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
 
         <div className={cardClass}>
           <div className="flex justify-between items-center mb-10">
-            <h3 className="text-xl font-black italic underline decoration-indigo-500 underline-offset-8">HQ Activity Chart</h3>
+            <h3 className="text-xl font-black underline decoration-indigo-500 underline-offset-8">HQ Activity Chart</h3>
             <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest">Tasks completed (last 7 days)</span>
           </div>
           <div className="h-64 flex items-end justify-between gap-4">
@@ -196,12 +199,12 @@ const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
 
         {/* Ideas Block */}
         <div className={cardClass}>
-          <h3 className="text-xl font-black mb-6 italic underline decoration-emerald-500 underline-offset-8">Staff Suggestions Hub</h3>
+          <h3 className="text-xl font-black mb-6 underline decoration-emerald-500 underline-offset-8">Staff Suggestions Hub</h3>
           <div className="max-h-80 overflow-y-auto pr-4 space-y-4 no-scrollbar">
             {ideas.length === 0 ? (
               <div className="py-16 text-center">
                 <Lightbulb className="mx-auto text-slate-100 dark:text-slate-800 mb-4" size={48} />
-                <p className="text-xs text-slate-400 italic">No field suggestions received yet.</p>
+                <p className="text-xs text-slate-400">No field suggestions received yet.</p>
               </div>
             ) : ideas.map(idea => (
               <div key={idea.id} className="p-5 bg-slate-50/5 rounded-[2rem] border border-slate-100/5 flex items-start gap-4 group hover:border-emerald-500 transition-all">
@@ -217,7 +220,7 @@ const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
                       <button onClick={() => deleteIdea(idea.id)} className="p-2 bg-red-500 text-white rounded-xl shadow-lg hover:scale-110 transition-transform"><Trash2 size={12} /></button>
                     </div>
                   </div>
-                  <p className="text-xs text-slate-400 italic mt-3 leading-relaxed border-l-2 border-emerald-500/20 pl-4">{idea.text}</p>
+                  <p className="text-xs text-slate-400 mt-3 leading-relaxed border-l-2 border-emerald-500/20 pl-4">{idea.text}</p>
                 </div>
               </div>
             ))}
@@ -233,7 +236,7 @@ const DirectorDashboard: React.FC<DirectorDashboardProps> = ({
         <div className={cardClass}>
           <div className="flex items-center gap-4 border-b border-slate-100/10 pb-8 mb-8">
             <Send className="text-indigo-600" size={32} />
-            <h2 className="text-3xl font-black uppercase tracking-tighter italic">{editingTask ? 'Modify Directive' : t.sendTask}</h2>
+            <h2 className="text-3xl font-black uppercase tracking-tighter">{editingTask ? 'Modify Directive' : t.sendTask}</h2>
           </div>
           <form className="space-y-6" onSubmit={handleTaskSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
