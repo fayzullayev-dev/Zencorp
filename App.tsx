@@ -22,7 +22,7 @@ import {
   Home, UserPlus, FolderPlus, Users, ShieldCheck, Key, Plus,
   Clock, LogOut, Sun, Moon, Send, Inbox, ChevronDown, ChevronRight,
   Contact, FileText, ListFilter, ArrowLeft, Archive, Search as UserSearch,
-  LayoutPanelLeft, Workflow
+  LayoutPanelLeft, Workflow, Menu, X
 } from 'lucide-react';
 
 const translations = {
@@ -74,6 +74,7 @@ const App: React.FC = () => {
   const [isPersonnelOpen, setIsPersonnelOpen] = useState(false);
   const [isDepartmentsOpen, setIsDepartmentsOpen] = useState(false);
   const [isTasksMenuOpen, setIsTasksMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState<Toast[]>([]);
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; title: string; message: string; onConfirm: () => void } | null>(null);
   const [promptModal, setPromptModal] = useState<{ isOpen: boolean; title: string; message: string; placeholder: string; onConfirm: (v: string) => void } | null>(null);
@@ -191,7 +192,7 @@ const App: React.FC = () => {
 
   const NavItem = ({ icon: Icon, label, active, onClick, sub = false }: any) => (
     <button
-      onClick={onClick}
+      onClick={() => { onClick(); setIsMobileMenuOpen(false); }}
       className={`w-full flex items-center gap-4 ${sub ? 'pl-12 py-3' : 'px-5 py-4'} rounded-2xl text-sm font-bold transition-all ${active ? 'bg-indigo-600 text-white shadow-lg' : `${isDarkMode ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-500 hover:bg-slate-50'}`}`}
     >
       <Icon size={sub ? 16 : 20} /> <span className="truncate">{label}</span>
@@ -199,12 +200,33 @@ const App: React.FC = () => {
   );
 
   return (
-    <div className={`min-h-screen flex transition-colors duration-300 ${isDarkMode ? 'bg-slate-950 text-slate-100' : 'bg-[#F4F7FE] text-slate-900'}`}>
-      <aside className={`w-80 flex flex-col h-screen sticky top-0 z-[100] border-r transition-colors ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+    <div className={`min-h-screen flex flex-col lg:flex-row transition-colors duration-300 ${isDarkMode ? 'bg-slate-950 text-slate-100' : 'bg-[#F4F7FE] text-slate-900'}`}>
+      {/* Mobile Backdrop */}
+      {isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-[150] lg:hidden transition-all duration-300"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      <aside className={`
+        fixed inset-y-0 left-0 z-[200] w-80 flex flex-col h-screen border-r transition-all duration-500 ease-in-out
+        ${isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}
+        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        lg:sticky lg:top-0
+      `}>
         <div className="p-8 space-y-6 flex-1 overflow-y-auto no-scrollbar scroll-smooth">
-          <div className="flex items-center gap-3 px-2 mb-4">
-            <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black shadow-lg">ZC</div>
-            <h1 className="text-xl font-black tracking-tighter">ZEN<span className={isDarkMode ? 'text-slate-600' : 'text-slate-200'}>CORP</span></h1>
+          <div className="flex items-center justify-between gap-3 px-2 mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black shadow-lg">ZC</div>
+              <h1 className="text-xl font-black tracking-tighter">ZEN<span className={isDarkMode ? 'text-slate-600' : 'text-slate-200'}>CORP</span></h1>
+            </div>
+            <button
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="p-2 lg:hidden text-slate-400 hover:text-slate-600 transition-colors"
+            >
+              <X size={24} />
+            </button>
           </div>
 
           <nav className="space-y-1">
@@ -370,7 +392,21 @@ const App: React.FC = () => {
         </div>
       </aside>
 
-      <main className="flex-1 p-10 overflow-y-auto no-scrollbar relative flex flex-col">
+      <main className="flex-1 p-4 md:p-10 overflow-y-auto no-scrollbar relative flex flex-col">
+        {/* Mobile Header Toggle */}
+        <div className="flex lg:hidden items-center justify-between mb-8">
+          <button
+            onClick={() => setIsMobileMenuOpen(true)}
+            className={`p-3 rounded-2xl shadow-sm border transition-all ${isDarkMode ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-100 text-slate-600'}`}
+          >
+            <Menu size={24} />
+          </button>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-black text-xs shadow-lg">ZC</div>
+            <span className="text-sm font-black tracking-widest">ZENCORE</span>
+          </div>
+        </div>
+
         {currentView !== 'main' && (
           <button
             onClick={() => setCurrentView('main')}

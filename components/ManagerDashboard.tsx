@@ -167,34 +167,36 @@ const ManagerDashboard: React.FC<ManagerDashboardProps> = ({
             Обзор персонала
           </h2>
         </div>
-        <table className="w-full text-left">
-          <thead className="bg-slate-50 text-slate-400 text-[10px] uppercase font-black tracking-[0.2em]">
-            <tr><th className="px-10 py-6">Сотрудник</th><th className="px-10 py-6">Должность</th><th className="px-10 py-6 text-right">Статус</th></tr>
-          </thead>
-          <tbody className="divide-y divide-slate-50">
-            {employees.slice(0, 5).map(emp => (
-              <tr key={emp.id} className="group hover:bg-slate-50/50 transition-colors">
-                <td className="px-10 py-5 flex items-center gap-6">
-                  <img src={emp.photoUrl} className="w-12 h-16 rounded-2xl object-cover border border-slate-100 shadow-sm" />
-                  <div><p className="font-black text-slate-900">{emp.lastName} {emp.firstName}</p><p className="text-[10px] font-bold text-indigo-500 uppercase">{emp.id.slice(-6)}</p></div>
-                </td>
-                <td className="px-10 py-5">
-                  <p className="text-sm font-bold text-slate-800">{emp.position}</p>
-                </td>
-                <td className="px-10 py-5 text-right">
-                  <span className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase text-white ${emp.isOnline ? 'bg-emerald-500' : 'bg-slate-300'}`}>
-                    {emp.isOnline ? 'Online' : 'Offline'}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {employees.length > 5 && (
-          <div className="p-6 text-center border-t border-slate-50">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">И еще {employees.length - 5} сотрудников в основном списке</p>
-          </div>
-        )}
+        <div className="overflow-x-auto no-scrollbar">
+          <table className="w-full text-left min-w-[600px]">
+            <thead className="bg-slate-50 text-slate-400 text-[10px] uppercase font-black tracking-[0.2em]">
+              <tr><th className="px-10 py-6">Сотрудник</th><th className="px-10 py-6">Должность</th><th className="px-10 py-6 text-right">Статус</th></tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {employees.slice(0, 5).map(emp => (
+                <tr key={emp.id} className="group hover:bg-slate-50/50 transition-colors">
+                  <td className="px-10 py-5 flex items-center gap-6">
+                    <img src={emp.photoUrl} className="w-12 h-16 rounded-2xl object-cover border border-slate-100 shadow-sm" />
+                    <div><p className="font-black text-slate-900">{emp.lastName} {emp.firstName}</p><p className="text-[10px] font-bold text-indigo-500 uppercase">{emp.id.slice(-6)}</p></div>
+                  </td>
+                  <td className="px-10 py-5">
+                    <p className="text-sm font-bold text-slate-800">{emp.position}</p>
+                  </td>
+                  <td className="px-10 py-5 text-right">
+                    <span className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase text-white ${emp.isOnline ? 'bg-emerald-500' : 'bg-slate-300'}`}>
+                      {emp.isOnline ? 'Online' : 'Offline'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {employees.length > 5 && (
+            <div className="p-6 text-center border-t border-slate-50">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">И еще {employees.length - 5} сотрудников в основном списке</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

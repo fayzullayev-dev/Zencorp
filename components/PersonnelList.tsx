@@ -121,7 +121,7 @@ const PersonnelList: React.FC<PersonnelListProps> = ({
     if (viewType === 'workers' || viewType === 'catalog' || viewType === 'archive') {
       return (
         <div className={`${cardClass} overflow-x-auto no-scrollbar p-0 rounded-[3rem]`}>
-          <table className="w-full text-left">
+          <table className="w-full text-left min-w-[800px]">
             <thead className={`text-[10px] font-black uppercase tracking-widest ${isDarkMode ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-500'}`}>
               <tr>
                 <th className="px-8 py-6">ID Unit</th>
